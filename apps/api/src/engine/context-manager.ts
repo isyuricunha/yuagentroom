@@ -1,4 +1,4 @@
-import { callLlm } from '../utils/llm.js';
+import { callLlm, resolveAgentCredentials } from '../utils/llm.js';
 import type { Agent, Message } from '@agentroom/shared';
 
 /**
@@ -107,9 +107,13 @@ async function summarizeHistory(messages: Message[], summarizerAgent: Agent): Pr
   }
 
   try {
+    const creds = await resolveAgentCredentials(summarizerAgent);
+    if (!creds) {
+      throw new Error('No LLM credentials available for summarization');
+    }
     const { content } = await callLlm(
-      summarizerAgent.providerUrl,
-      summarizerAgent.apiKey,
+      creds.providerUrl,
+      creds.apiKey,
       summarizerAgent.model,
       [
         {

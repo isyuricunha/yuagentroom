@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import { eq, and, isNull } from 'drizzle-orm';
 import type { Agent, Message, Room } from '@agentroom/shared';
 import { getDb } from '../db/index.js';
-import { callLlm } from '../utils/llm.js';
+import { callLlm, resolveAgentCredentials } from '../utils/llm.js';
 import { pickNextSpeaker } from './moderator.js';
 import { buildContext } from './context-manager.js';
 
@@ -144,24 +144,28 @@ export class TurnLoop {
         room.topic
       );
 
-      // Call the agent's LLM
-      let responseContent: string;
-      try {
-        const { content } = await callLlm(
-          currentAgent.providerUrl,
-          currentAgent.apiKey,
-          currentAgent.model,
-          contextMessages,
-          currentAgent.reasoningEffort
-        );
-        responseContent = content;
-      } catch (err) {
-        console.error(`[TurnLoop] LLM call failed for agent ${currentAgent.name}:`, err);
-        // Update index so next iteration skips this agent
-        this.lastSpeakerIndex = (this.lastSpeakerIndex + 1) % agents.length;
-        await sleep(room.turnDelayMs);
-        continue;
-      }
+// Call the agent's LLM with fallback to global credentials
+       let responseContent: string;
+       try {
+         const creds = await resolveAgentCredentials(currentAgent);
+         if (!creds) {
+           throw new Error('No LLM credentials available. Configure agent credentials or set global settings.');
+         }
+         const { content } = await callLlm(
+           creds.providerUrl,
+           creds.apiKey,
+           currentAgent.model,
+           contextMessages,
+           currentAgent.reasoningEffort
+         );
+         responseContent = content;
+       } catch (err) {
+         console.error(`[TurnLoop] LLM call failed for agent ${currentAgent.name}:`, err);
+         // Update index so next iteration skips this agent
+         this.lastSpeakerIndex = (this.lastSpeakerIndex + 1) % agents.length;
+         await sleep(room.turnDelayMs);
+         continue;
+       }
 
       // Save message to DB
       const msgId = randomUUID();

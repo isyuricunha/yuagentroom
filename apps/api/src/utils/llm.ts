@@ -1,3 +1,6 @@
+import type { Agent } from '@agentroom/shared';
+import { getDb } from '../db/index.js';
+
 export interface LlmMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -5,6 +8,54 @@ export interface LlmMessage {
 
 export interface LlmResponse {
   content: string;
+}
+
+export interface LlmCredentials {
+  providerUrl: string;
+  apiKey: string;
+}
+
+/**
+ * Resolves LLM credentials with fallback to global settings.
+ * Priority: agent-specific credentials > global settings.
+ * Returns null if no credentials are available.
+ */
+export async function resolveLlmCredentials(
+  agentProviderUrl: string | undefined,
+  agentApiKey: string | undefined,
+): Promise<LlmCredentials | null> {
+  // Use agent-specific credentials if both are provided
+  if (agentProviderUrl && agentApiKey) {
+    return { providerUrl: agentProviderUrl, apiKey: agentApiKey };
+  }
+
+  // Fallback to global settings
+  const client = await getDb();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const records = await (client.db as any)
+    .select({ key: client.schema.settings.key, value: client.schema.settings.value })
+    .from(client.schema.settings);
+
+  const globalSettings: Record<string, string> = {};
+  for (const r of records) {
+    globalSettings[r.key] = r.value;
+  }
+
+  const globalProviderUrl = globalSettings['global_provider_url'];
+  const globalApiKey = globalSettings['global_api_key'];
+
+  if (globalProviderUrl && globalApiKey) {
+    return { providerUrl: globalProviderUrl, apiKey: globalApiKey };
+  }
+
+  return null;
+}
+
+/**
+ * Resolves LLM credentials for an agent with fallback to global settings.
+ */
+export async function resolveAgentCredentials(agent: Agent): Promise<LlmCredentials | null> {
+  return resolveLlmCredentials(agent.providerUrl, agent.apiKey);
 }
 
 /**

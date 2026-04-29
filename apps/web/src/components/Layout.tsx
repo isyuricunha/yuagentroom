@@ -1,13 +1,34 @@
 import { NavLink, Outlet, useNavigate } from 'react-router';
-import { Cpu, MessageSquare, Settings, LogOut } from 'lucide-react';
+import { Cpu, MessageSquare, Settings, LogOut, Users } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import logo from '../assets/logo.png';
+import { getCurrentUser } from '../lib/api.ts';
+import type { User } from '@agentroom/shared';
 
 export function Layout() {
   const navigate = useNavigate();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getCurrentUser().then((u) => {
+      setUser(u);
+      setLoading(false);
+    });
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem('agentroom_token');
     navigate('/login');
   };
+
+  if (loading) {
+    return (
+      <div style={{ height: '100vh', background: 'var(--bg-app)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div className="layout">
@@ -27,14 +48,21 @@ export function Layout() {
             <NavLink to="/settings" className={({ isActive }) => isActive ? 'active' : ''}>
               <Settings size={18} /> <span>Settings</span>
             </NavLink>
+            {user?.role === 'admin' && (
+              <NavLink to="/admin/users" className={({ isActive }) => isActive ? 'active' : ''}>
+                <Users size={18} /> <span>Users</span>
+              </NavLink>
+            )}
           </nav>
         </div>
-        
+
         <div className="sidebar-footer">
           <div className="user-pill">
             <div className="status-dot"></div>
-            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>Administrator</span>
-            <button 
+            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {user?.role === 'admin' ? 'Administrator' : 'User'}
+            </span>
+            <button
               onClick={handleLogout}
               style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex' }}
               title="Logout"

@@ -1,5 +1,9 @@
 import Fastify from 'fastify';
 import fastifyJwt from '@fastify/jwt';
+import fastifyFormbody from '@fastify/formbody';
+import { config } from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { readEnv } from './utils/env.js';
 import { getDb } from './db/index.js';
 import agentsPlugin from './routes/agents.js';
@@ -8,6 +12,11 @@ import settingsPlugin from './routes/settings.js';
 import authPlugin from './routes/auth.js';
 import { createWsHandler, broadcast } from './ws/handler.js';
 import { getRoomRunner } from './engine/room-runner.js';
+
+// Load .env from project root
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+config({ path: join(__dirname, '../../../.env') });
 
 async function main(): Promise<void> {
   const env = readEnv();
@@ -30,6 +39,9 @@ async function main(): Promise<void> {
     void reply.header('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
     void reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   });
+
+  // Body parser for JSON
+  await app.register(fastifyFormbody);
 
   // Setup JWT
   await app.register(fastifyJwt, {
@@ -55,7 +67,7 @@ async function main(): Promise<void> {
     }
   });
 
-  // REST routes
+// REST routes
   await app.register(authPlugin, { prefix: '/api' });
   await app.register(agentsPlugin, { prefix: '/api' });
   await app.register(roomsPlugin, { prefix: '/api' });

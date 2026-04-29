@@ -42,7 +42,7 @@ export function LoginPage() {
     try {
       let data: { token: string };
       if (mode === 'login') {
-        data = await login({ identifier: legacyMode ? '' : username, password });
+        data = await login({ username: legacyMode ? '' : username, password });
       } else {
         data = await register({ username, email, password });
       }

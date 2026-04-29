@@ -1,4 +1,4 @@
-import { callLlm } from '../utils/llm.js';
+import { callLlm, resolveAgentCredentials } from '../utils/llm.js';
 import type { Agent, Message } from '@agentroom/shared';
 
 function escapeRegex(string: string): string {
@@ -63,9 +63,14 @@ export async function pickNextSpeaker(
 
     const modifier = lastSpeaker ? `The last speaker was ${lastSpeaker.name}. Please select a different agent to keep the conversation flowing.` : '';
 
+    const creds = await resolveAgentCredentials(moderatorAgent);
+    if (!creds) {
+      throw new Error('No LLM credentials available for moderation');
+    }
+
     const { content } = await callLlm(
-      moderatorAgent.providerUrl,
-      moderatorAgent.apiKey,
+      creds.providerUrl,
+      creds.apiKey,
       moderatorAgent.model,
       [
         {

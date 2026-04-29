@@ -35,7 +35,7 @@ async function request<T>(
 
 // ─── Auth ───────────────────────────────────────────────────────────────
 
-export async function login(input: { identifier: string; password: string }): Promise<AuthResponse> {
+export async function login(input: { username: string; password: string }): Promise<AuthResponse> {
   return request<AuthResponse>('/auth/login', {
     method: 'POST',
     body: JSON.stringify(input),
@@ -61,6 +61,23 @@ export async function getCurrentUser(): Promise<User | null> {
   } catch {
     return null;
   }
+}
+
+// ─── Users (Admin) ───────────────────────────────────────────────────────────
+
+export async function listUsers(): Promise<User[]> {
+  return request<User[]>('/users');
+}
+
+export async function updateUserRole(id: string, role: 'admin' | 'user'): Promise<User> {
+  return request<User>(`/users/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ role }),
+  });
+}
+
+export async function deleteUser(id: string): Promise<void> {
+  return request<void>(`/users/${id}`, { method: 'DELETE' });
 }
 
 // ─── Agents ──────────────────────────────────────────────────────────────

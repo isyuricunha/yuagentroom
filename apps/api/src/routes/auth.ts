@@ -48,7 +48,6 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
       return reply.status(400).send({ error: 'Username/email and password required' });
     }
 
-    // ... rest of the function continues
     const users = await (client.db as any)
       .select()
       .from(client.schema.users)

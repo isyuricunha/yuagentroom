@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import type { Agent } from '@agentroom/shared';
-import { listAgents, createAgent, updateAgent, deleteAgent, type CreateAgentInput } from '../lib/api.ts';
+import type { Agent, CreateAgentInput } from '@agentroom/shared';
+import { listAgents, createAgent, updateAgent, deleteAgent } from '../lib/api.ts';
 import { Button } from '../components/Button.tsx';
 import { AgentCard } from '../components/AgentCard.tsx';
 import { AgentForm } from '../components/AgentForm.tsx';

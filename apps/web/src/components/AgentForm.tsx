@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Agent } from '@agentroom/shared';
-import type { CreateAgentInput } from '../lib/api.ts';
+import type { Agent, CreateAgentInput } from '@agentroom/shared';
 import { api } from '../lib/api.ts';
 import { Button } from './Button.tsx';
 import { Input, Textarea } from './Input.tsx';

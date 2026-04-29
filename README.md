@@ -70,7 +70,7 @@ This will start:
 - **yuagentroom**: The main application (API + Web UI) on port 3000
 - **db**: PostgreSQL database (optional, only with `--profile postgres`)
 
-### Configuration
+## Configuration
 
 The application uses these environment variables (set in `docker-compose.yml`):
 
@@ -88,12 +88,33 @@ DATABASE_URL=sqlite:./data/db.sqlite
 # JWT secret for session tokens (required - change in production!)
 JWT_SECRET=change_me_in_production
 
-# Web UI login password (optional - leave empty for open/no-auth mode)
+# Allow user registration (optional - default: false)
+# Set to "true" to allow new user signups
+ALLOW_REGISTRATION=false
+
+# Admin password fallback (optional - for backward compatibility)
+# Only used if no users exist and ALLOW_REGISTRATION is false
 ADMIN_PASSWORD=change_me_password
 
 # Redis for pub/sub (optional - enables multi-instance scaling)
 # REDIS_URL=redis://redis:6379
 ```
+
+### Authentication
+
+YuAgentRoom uses a user-based authentication system:
+
+- **First User Auto-Admin**: The first registered user automatically becomes an admin
+- **Registration Control**: Set `ALLOW_REGISTRATION=true` to allow new signups (default: disabled)
+- **Password Security**: Passwords are hashed with bcrypt (10 rounds)
+- **JWT Sessions**: Tokens expire after 30 days
+
+**Getting Started:**
+1. Set `ALLOW_REGISTRATION=true` in `docker-compose.yml`
+2. Restart the container: `docker-compose down && docker-compose up -d`
+3. Open the web UI and register the first user (automatically becomes admin)
+4. Set `ALLOW_REGISTRATION=false` to disable further registrations
+5. Share the admin credentials with your team or create additional users as needed
 
 ### Building Docker Image
 
@@ -117,10 +138,11 @@ docker-compose build
 
 ### Optional
 
-| Variable | Description | Note |
-|----------|-------------|------|
-| `ADMIN_PASSWORD` | Web UI login password | Leave empty for open mode |
-| `REDIS_URL` | Redis connection for pub/sub | Optional, enables scaling |
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `ALLOW_REGISTRATION` | Enable user signups | `false` |
+| `ADMIN_PASSWORD` | Fallback admin password | (empty) |
+| `REDIS_URL` | Redis connection for pub/sub | (optional) |
 
 ### API Keys
 
@@ -153,4 +175,4 @@ WebSocket endpoint for real-time communication:
 
 ## License
 
-MIT
+Apache 2.0

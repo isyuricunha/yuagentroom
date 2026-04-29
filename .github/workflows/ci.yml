@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+    paths-ignore:
+      - "README.md"
+      - "LICENSE"
+      - "LICENSE.txt"
+      - ".env.example"
+      - ".env.docker.example"
+      - ".env.local.example"
+      - "apps/web/.env.example"
+      - "**/*.md"
+      - "docker-compose*.yml"
+      - ".github/**/*.md"
+  pull_request:
+    branches: ["main"]
+    paths-ignore:
+      - "README.md"
+      - "LICENSE"
+      - "LICENSE.txt"
+      - ".env.example"
+      - ".env.docker.example"
+      - ".env.local.example"
+      - "apps/web/.env.example"
+      - "**/*.md"
+      - "docker-compose*.yml"
+      - ".github/**/*.md"
+
+jobs:
+  checks:
+    name: CI checks
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      DSLIM_NO_HEALTHCHECK: true
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Security - fail on committed secrets
+        run: |
+          set -euo pipefail
+
+          echo "Checking for committed .env files (non-example)..."
+          env_files=$(git ls-files | grep -E '(^|/)\.env($|\.)' | grep -v -E '\.example$' || true)
+          if [ -n "$env_files" ]; then
+            echo "ERROR: committed .env files detected:"
+            echo "$env_files"
+            exit 1
+          fi
+
+          echo "Checking for committed private key files..."
+          key_files=$(git ls-files | grep -E '(\.(pem|key|p12)$|(^|/)id_rsa($|\.)|(^|/)id_ed25519($|\.))' || true)
+          if [ -n "$key_files" ]; then
+            echo "ERROR: committed key files detected:"
+            echo "$key_files"
+            exit 1
+          fi
+
+          echo "Checking for private key markers in tracked files..."
+          markers=$(git grep -n "BEGIN PRIVATE KEY" -- . ':(exclude).github/workflows/ci.yml' || true)
+          if [ -n "$markers" ]; then
+            echo "ERROR: private key marker detected in tracked file(s)."
+            echo "$markers"
+            exit 1
+          fi
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type-check
+        run: pnpm type-check
+
+      - name: Build
+        run: pnpm build

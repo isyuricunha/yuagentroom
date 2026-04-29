@@ -1,0 +1,74 @@
+import Fastify from 'fastify';
+import fastifyJwt from '@fastify/jwt';
+import { readEnv } from './utils/env.js';
+import { getDb } from './db/index.js';
+import agentsPlugin from './routes/agents.js';
+import roomsPlugin from './routes/rooms.js';
+import settingsPlugin from './routes/settings.js';
+import authPlugin from './routes/auth.js';
+import { createWsHandler, broadcast } from './ws/handler.js';
+import { getRoomRunner } from './engine/room-runner.js';
+
+async function main(): Promise<void> {
+  const env = readEnv();
+
+  // Initialize DB (creates tables if needed)
+  await getDb();
+
+  // Initialize the room runner with the broadcast function
+  getRoomRunner(broadcast);
+
+  const app = Fastify({ logger: true });
+
+  // CORS — allow all origins (frontend on different port in dev)
+  app.addHook('onRequest', async (_req, reply) => {
+    void reply.header('Access-Control-Allow-Origin', '*');
+    void reply.header('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
+    void reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  });
+
+  // Setup JWT
+  await app.register(fastifyJwt, {
+    secret: process.env.JWT_SECRET || 'super-secret-agentroom-key-998877',
+  });
+
+  // Require Authentication via JWT for API
+  app.addHook('onRequest', async (req, reply) => {
+    if (!process.env.ADMIN_PASSWORD) return; // Open mode if no password set
+    if (req.method === 'OPTIONS') return; // Pre-flight
+    if (req.url === '/health' || req.url.startsWith('/api/auth')) return;
+
+    try {
+      await req.jwtVerify();
+    } catch {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
+  });
+
+  app.addHook('preHandler', async (req, reply) => {
+    if (req.method === 'OPTIONS') {
+      return reply.status(204).send();
+    }
+  });
+
+  // REST routes
+  await app.register(authPlugin, { prefix: '/api' });
+  await app.register(agentsPlugin, { prefix: '/api' });
+  await app.register(roomsPlugin, { prefix: '/api' });
+  await app.register(settingsPlugin, { prefix: '/api' });
+
+  // Health check
+  app.get('/health', async () => ({ status: 'ok' }));
+
+  // Start server
+  const address = await app.listen({ port: env.PORT, host: '0.0.0.0' });
+  app.log.info(`AgentRoom API listening at ${address}`);
+
+  // Attach WebSocket server to the underlying HTTP server
+  createWsHandler(app.server);
+}
+
+main().catch((err: unknown) => {
+  console.error('Fatal error:', err);
+  process.exit(1);
+});

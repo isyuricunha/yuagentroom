@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # Main application - API server + Web UI
+  yuagentroom:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: ghcr.io/isyuricunha/yuagentroom:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      # Server port (required, default works fine)
+      - PORT=3000
+      # Database connection (required)
+      # • SQLite - simplest, data persists in ./data/db.sqlite
+      - DATABASE_URL=sqlite:./data/db.sqlite
+      # • PostgreSQL - uncomment below and comment SQLite line above for production
+      # - DATABASE_URL=postgresql://yuagentroom:password@db:5432/yuagentroom
+      # JWT secret for session tokens (required, change in production!)
+      - JWT_SECRET=change_me_in_production
+      # Web UI login password (optional - leave empty for open/no-auth mode)
+      - ADMIN_PASSWORD=change_me_password
+    restart: unless-stopped
+
+  # PostgreSQL database (optional - only needed if using postgres instead of sqlite)
+  # Usage: docker-compose --profile postgres up -d
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: yuagentroom
+      POSTGRES_PASSWORD: change_me_yuagentroom_password
+      POSTGRES_DB: yuagentroom
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    profiles:
+      - postgres  # Optional service - only started with --profile postgres
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

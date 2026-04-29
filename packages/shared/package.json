@@ -1,0 +1,23 @@
+{
+  "name": "@agentroom/shared",
+  "version": "1.0.0",
+  "description": "Shared TypeScript types for AgentRoom",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "check-types": "tsc --noEmit",
+    "dev": "tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.2"
+  }
+}

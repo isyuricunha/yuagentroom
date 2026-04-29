@@ -1,0 +1,196 @@
+import { readEnv } from '../utils/env.js';
+
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
+
+export type SqliteSchema = {
+  agents: typeof import('./schema.js').agentsSqlite;
+  rooms: typeof import('./schema.js').roomsSqlite;
+  roomAgents: typeof import('./schema.js').roomAgentsSqlite;
+  messages: typeof import('./schema.js').messagesSqlite;
+  settings: typeof import('./schema.js').settingsSqlite;
+};
+
+export type PgSchema = {
+  agents: typeof import('./schema.js').agentsPg;
+  rooms: typeof import('./schema.js').roomsPg;
+  roomAgents: typeof import('./schema.js').roomAgentsPg;
+  messages: typeof import('./schema.js').messagesPg;
+  settings: typeof import('./schema.js').settingsPg;
+};
+
+export type DbClient =
+  | { dialect: 'sqlite'; db: BetterSQLite3Database<SqliteSchema>; schema: SqliteSchema }
+  | { dialect: 'pg'; db: NodePgDatabase<PgSchema>; schema: PgSchema };
+
+let _client: DbClient | null = null;
+
+export async function getDb(): Promise<DbClient> {
+  if (_client) return _client;
+
+  const { DATABASE_URL } = readEnv();
+
+  if (DATABASE_URL.startsWith('sqlite:')) {
+    const path = DATABASE_URL.slice('sqlite:'.length);
+
+    const { default: Database } = await import('better-sqlite3');
+    const { drizzle } = await import('drizzle-orm/better-sqlite3');
+    const schema = await import('./schema.js');
+    const fs = await import('fs');
+    const pathModule = await import('path');
+
+    const dir = pathModule.dirname(path);
+    if (dir !== '.' && !fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    const sqlite = new Database(path);
+    sqlite.pragma('journal_mode = WAL');
+
+    const sqliteSchema: SqliteSchema = {
+      agents: schema.agentsSqlite,
+      rooms: schema.roomsSqlite,
+      roomAgents: schema.roomAgentsSqlite,
+      messages: schema.messagesSqlite,
+      settings: schema.settingsSqlite,
+    };
+
+    const db = drizzle(sqlite, { schema: sqliteSchema });
+
+    // Create tables if they don't exist
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS agents (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        system_prompt TEXT NOT NULL,
+        model TEXT NOT NULL,
+        provider_url TEXT NOT NULL,
+        api_key TEXT NOT NULL,
+        reasoning_effort TEXT NOT NULL DEFAULT 'none',
+        created_at TEXT NOT NULL
+      );
+    `);
+
+    // Migration: Add reasoning_effort to agents if it doesn't exist
+    const tableInfo = sqlite.prepare("PRAGMA table_info(agents)").all() as any[];
+    const hasReasoningEffort = tableInfo.some((col) => col.name === 'reasoning_effort');
+    if (!hasReasoningEffort) {
+      sqlite.exec("ALTER TABLE agents ADD COLUMN reasoning_effort TEXT NOT NULL DEFAULT 'none'");
+    }
+
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS rooms (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        topic TEXT,
+        status TEXT NOT NULL DEFAULT 'idle',
+        turn_delay_ms INTEGER NOT NULL DEFAULT 2000,
+        max_context_messages INTEGER NOT NULL DEFAULT 50,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS room_agents (
+        room_id TEXT NOT NULL,
+        agent_id TEXT NOT NULL,
+        joined_at TEXT NOT NULL,
+        left_at TEXT,
+        PRIMARY KEY (room_id, agent_id, joined_at)
+      );
+
+      CREATE TABLE IF NOT EXISTS messages (
+        id TEXT PRIMARY KEY,
+        room_id TEXT NOT NULL,
+        agent_id TEXT,
+        role TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+    `);
+
+    _client = { dialect: 'sqlite', db, schema: sqliteSchema };
+    return _client;
+  }
+
+  // PostgreSQL path
+  const { Pool } = await import('pg');
+  const { drizzle } = await import('drizzle-orm/node-postgres');
+  const schema = await import('./schema.js');
+
+  const pool = new Pool({ connectionString: DATABASE_URL });
+
+  const pgSchema: PgSchema = {
+    agents: schema.agentsPg,
+    rooms: schema.roomsPg,
+    roomAgents: schema.roomAgentsPg,
+    messages: schema.messagesPg,
+    settings: schema.settingsPg,
+  };
+
+  const db = drizzle(pool, { schema: pgSchema });
+
+  // Ensure tables exist for PostgreSQL
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS agents (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      system_prompt TEXT NOT NULL,
+      model TEXT NOT NULL,
+      provider_url TEXT NOT NULL,
+      api_key TEXT NOT NULL,
+      reasoning_effort TEXT NOT NULL DEFAULT 'none',
+      created_at TIMESTAMPTZ NOT NULL
+    );
+  `);
+
+  // Migration for PG: add column if missing
+  await pool.query(`
+    DO $$ 
+    BEGIN 
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='agents' AND column_name='reasoning_effort') THEN
+        ALTER TABLE agents ADD COLUMN reasoning_effort TEXT NOT NULL DEFAULT 'none';
+      END IF;
+    END $$;
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS rooms (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      topic TEXT,
+      status TEXT NOT NULL DEFAULT 'idle',
+      turn_delay_ms INTEGER NOT NULL DEFAULT 2000,
+      max_context_messages INTEGER NOT NULL DEFAULT 50,
+      created_at TIMESTAMPTZ NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS room_agents (
+      room_id TEXT NOT NULL,
+      agent_id TEXT NOT NULL,
+      joined_at TIMESTAMPTZ NOT NULL,
+      left_at TIMESTAMPTZ,
+      PRIMARY KEY (room_id, agent_id, joined_at)
+    );
+
+    CREATE TABLE IF NOT EXISTS messages (
+      id TEXT PRIMARY KEY,
+      room_id TEXT NOT NULL,
+      agent_id TEXT,
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+  `);
+
+  _client = { dialect: 'pg', db, schema: pgSchema };
+  return _client;
+}

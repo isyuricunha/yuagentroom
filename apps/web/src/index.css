@@ -1510,3 +1510,39 @@ code, pre {
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
+
+.auth-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 0.25rem;
+  border-radius: 12px;
+}
+
+.auth-toggle .toggle-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.auth-toggle .toggle-btn:hover {
+  color: var(--text-heading);
+}
+
+.auth-toggle .toggle-btn.active {
+  background: var(--bg-surface);
+  color: var(--accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}

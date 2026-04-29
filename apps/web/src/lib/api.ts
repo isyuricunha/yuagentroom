@@ -1,4 +1,4 @@
-import type { Agent, Room, Message, RoomWithAgents } from '@agentroom/shared';
+import type { Agent, Room, Message, RoomWithAgents, User, AuthResponse } from '@agentroom/shared';
 
 const BASE = '/api';
 
@@ -31,6 +31,36 @@ async function request<T>(
   }
 
   return data as T;
+}
+
+// ─── Auth ───────────────────────────────────────────────────────────────
+
+export async function login(input: { identifier: string; password: string }): Promise<AuthResponse> {
+  return request<AuthResponse>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function register(input: { username: string; email: string; password: string }): Promise<AuthResponse> {
+  return request<AuthResponse>('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function logout(): Promise<void> {
+  await request('/auth/logout', { method: 'POST' });
+  localStorage.removeItem('agentroom_token');
+}
+
+export async function getCurrentUser(): Promise<User | null> {
+  try {
+    const data = await request<{ user: User }>('/auth/me');
+    return data.user;
+  } catch {
+    return null;
+  }
 }
 
 // ─── Agents ──────────────────────────────────────────────────────────────

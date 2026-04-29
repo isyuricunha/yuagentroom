@@ -1,8 +1,14 @@
 import { useState } from 'react';
-import { Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { Lock, Eye, EyeOff, ShieldCheck, UserPlus, LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router';
+import { login, register } from '../lib/api';
+
+type AuthMode = 'login' | 'register';
 
 export function LoginPage() {
+  const [mode, setMode] = useState<AuthMode>('login');
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -13,21 +19,18 @@ export function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
-    
+
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
-      });
-      
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Login failed');
-      
+      let data: { token: string };
+      if (mode === 'login') {
+        data = await login({ identifier: username, password });
+      } else {
+        data = await register({ username, email, password });
+      }
       localStorage.setItem('agentroom_token', data.token);
       navigate('/rooms');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Invalid password');
+      setError(err instanceof Error ? err.message : 'Authentication failed');
     } finally {
       setLoading(false);
     }
@@ -45,13 +48,60 @@ export function LoginPage() {
           <div className="login-logo-icon">
             <ShieldCheck size={32} color="var(--accent)" />
           </div>
-          <h1>System Control</h1>
-          <p>Authentication required to access the grid.</p>
+          <h1>{mode === 'login' ? 'Welcome Back' : 'Create Account'}</h1>
+          <p>{mode === 'login' ? 'Enter your credentials to access the system.' : 'Register to join the agent grid.'}</p>
+        </div>
+
+        <div className="auth-toggle">
+          <button
+            className={`toggle-btn ${mode === 'login' ? 'active' : ''}`}
+            onClick={() => setMode('login')}
+          >
+            <LogIn size={16} /> Sign In
+          </button>
+          <button
+            className={`toggle-btn ${mode === 'register' ? 'active' : ''}`}
+            onClick={() => setMode('register')}
+          >
+            <UserPlus size={16} /> Register
+          </button>
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="field" style={{ marginBottom: '1.5rem' }}>
-            <label>Master Passphrase</label>
+          <div className="field">
+            <label>Username</label>
+            <div className="input-wrapper">
+              <Lock className="input-icon-left" size={16} />
+              <input
+                type="text"
+                className="input"
+                placeholder="your_username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoFocus
+                required
+              />
+            </div>
+          </div>
+
+          {mode === 'register' && (
+            <div className="field">
+              <label>Email</label>
+              <div className="input-wrapper">
+                <input
+                  type="email"
+                  className="input"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="field">
+            <label>Password</label>
             <div className="password-input-wrapper">
               <Lock className="input-icon-left" size={16} />
               <input
@@ -60,10 +110,10 @@ export function LoginPage() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                autoFocus
+                required
               />
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="password-toggle-btn"
                 onClick={() => setShowPassword(!showPassword)}
               >
@@ -75,7 +125,7 @@ export function LoginPage() {
           {error && <div className="login-error" style={{ marginBottom: '1rem' }}>{error}</div>}
 
           <button type="submit" className="btn btn-primary login-btn" disabled={loading}>
-            {loading ? 'Decrypting...' : 'Enter Console'}
+            {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : 'Create Account'}
           </button>
         </form>
 

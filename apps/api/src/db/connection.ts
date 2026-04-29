@@ -9,6 +9,7 @@ export type SqliteSchema = {
   roomAgents: typeof import('./schema.js').roomAgentsSqlite;
   messages: typeof import('./schema.js').messagesSqlite;
   settings: typeof import('./schema.js').settingsSqlite;
+  users: typeof import('./schema.js').usersSqlite;
 };
 
 export type PgSchema = {
@@ -17,6 +18,7 @@ export type PgSchema = {
   roomAgents: typeof import('./schema.js').roomAgentsPg;
   messages: typeof import('./schema.js').messagesPg;
   settings: typeof import('./schema.js').settingsPg;
+  users: typeof import('./schema.js').usersPg;
 };
 
 export type DbClient =
@@ -53,6 +55,7 @@ export async function getDb(): Promise<DbClient> {
       roomAgents: schema.roomAgentsSqlite,
       messages: schema.messagesSqlite,
       settings: schema.settingsSqlite,
+      users: schema.usersSqlite,
     };
 
     const db = drizzle(sqlite, { schema: sqliteSchema });
@@ -69,16 +72,7 @@ export async function getDb(): Promise<DbClient> {
         reasoning_effort TEXT NOT NULL DEFAULT 'none',
         created_at TEXT NOT NULL
       );
-    `);
 
-    // Migration: Add reasoning_effort to agents if it doesn't exist
-    const tableInfo = sqlite.prepare("PRAGMA table_info(agents)").all() as any[];
-    const hasReasoningEffort = tableInfo.some((col) => col.name === 'reasoning_effort');
-    if (!hasReasoningEffort) {
-      sqlite.exec("ALTER TABLE agents ADD COLUMN reasoning_effort TEXT NOT NULL DEFAULT 'none'");
-    }
-
-    sqlite.exec(`
       CREATE TABLE IF NOT EXISTS rooms (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -110,7 +104,24 @@ export async function getDb(): Promise<DbClient> {
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        username TEXT NOT NULL UNIQUE,
+        email TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'user',
+        created_at TEXT NOT NULL,
+        last_login_at TEXT
+      );
     `);
+
+    // Migration: Add reasoning_effort to agents if it doesn't exist
+    const tableInfo = sqlite.prepare("PRAGMA table_info(agents)").all() as any[];
+    const hasReasoningEffort = tableInfo.some((col) => col.name === 'reasoning_effort');
+    if (!hasReasoningEffort) {
+      sqlite.exec("ALTER TABLE agents ADD COLUMN reasoning_effort TEXT NOT NULL DEFAULT 'none'");
+    }
 
     _client = { dialect: 'sqlite', db, schema: sqliteSchema };
     return _client;
@@ -129,6 +140,7 @@ export async function getDb(): Promise<DbClient> {
     roomAgents: schema.roomAgentsPg,
     messages: schema.messagesPg,
     settings: schema.settingsPg,
+    users: schema.usersPg,
   };
 
   const db = drizzle(pool, { schema: pgSchema });
@@ -145,19 +157,7 @@ export async function getDb(): Promise<DbClient> {
       reasoning_effort TEXT NOT NULL DEFAULT 'none',
       created_at TIMESTAMPTZ NOT NULL
     );
-  `);
 
-  // Migration for PG: add column if missing
-  await pool.query(`
-    DO $$ 
-    BEGIN 
-      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='agents' AND column_name='reasoning_effort') THEN
-        ALTER TABLE agents ADD COLUMN reasoning_effort TEXT NOT NULL DEFAULT 'none';
-      END IF;
-    END $$;
-  `);
-
-  await pool.query(`
     CREATE TABLE IF NOT EXISTS rooms (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -189,6 +189,26 @@ export async function getDb(): Promise<DbClient> {
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      username TEXT NOT NULL UNIQUE,
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'user',
+      created_at TIMESTAMPTZ NOT NULL,
+      last_login_at TIMESTAMPTZ
+    );
+  `);
+
+  // Migration for PG: add column if missing
+  await pool.query(`
+    DO $$ 
+    BEGIN 
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='agents' AND column_name='reasoning_effort') THEN
+        ALTER TABLE agents ADD COLUMN reasoning_effort TEXT NOT NULL DEFAULT 'none';
+      END IF;
+    END $$;
   `);
 
   _client = { dialect: 'pg', db, schema: pgSchema };

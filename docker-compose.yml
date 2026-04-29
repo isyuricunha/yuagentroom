@@ -21,8 +21,11 @@ services:
       # - DATABASE_URL=postgresql://yuagentroom:password@db:5432/yuagentroom
       # JWT secret for session tokens (required, change in production!)
       - JWT_SECRET=change_me_in_production
-      # Web UI login password (optional - leave empty for open/no-auth mode)
-      - ADMIN_PASSWORD=change_me_password
+      # User registration:
+      # - ALLOW_REGISTRATION=true - allows new user registration
+      # - ALLOW_REGISTRATION=false (default) - registration disabled, first user must be created manually
+      # Legacy mode: If ADMIN_PASSWORD is set and no users exist, it allows one-time registration
+      - ADMIN_PASSWORD=
     restart: unless-stopped
 
   # PostgreSQL database (optional - only needed if using postgres instead of sqlite)

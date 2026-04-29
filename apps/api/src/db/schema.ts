@@ -53,6 +53,16 @@ export const settingsSqlite = sqliteTable('settings', {
   value: text('value').notNull(),
 });
 
+export const usersSqlite = sqliteTable('users', {
+  id: text('id').primaryKey(),
+  username: text('username').notNull().unique(),
+  email: text('email').notNull().unique(),
+  passwordHash: text('password_hash').notNull(),
+  role: text('role', { enum: ['admin', 'user'] }).notNull().default('user'),
+  createdAt: text('created_at').notNull(),
+  lastLoginAt: text('last_login_at'),
+});
+
 // ─── PostgreSQL schema ─────────────────────────────────────────────────────
 
 import { pgTable, text as pgText, integer as pgInteger, timestamp } from 'drizzle-orm/pg-core';
@@ -97,4 +107,14 @@ export const messagesPg = pgTable('messages', {
 export const settingsPg = pgTable('settings', {
   key: pgText('key').primaryKey(),
   value: pgText('value').notNull(),
+});
+
+export const usersPg = pgTable('users', {
+  id: pgText('id').primaryKey(),
+  username: pgText('username').notNull().unique(),
+  email: pgText('email').notNull().unique(),
+  passwordHash: pgText('password_hash').notNull(),
+  role: pgText('role').$type<'admin' | 'user'>().notNull().default('user'),
+  createdAt: timestamp('created_at').notNull(),
+  lastLoginAt: timestamp('last_login_at'),
 });

@@ -13,10 +13,14 @@ async function main(): Promise<void> {
   const env = readEnv();
 
   // Initialize DB (creates tables if needed)
-  await getDb();
+  const dbClient = await getDb();
 
   // Initialize the room runner with the broadcast function
   getRoomRunner(broadcast);
+
+  // Determine if auth is required (check if users exist)
+  const userCount = await (dbClient.db as any).select().from(dbClient.schema.users);
+  const hasUsers = userCount.length > 0;
 
   const app = Fastify({ logger: true });
 
@@ -32,9 +36,9 @@ async function main(): Promise<void> {
     secret: process.env.JWT_SECRET || 'super-secret-agentroom-key-998877',
   });
 
-  // Require Authentication via JWT for API
+  // Require Authentication via JWT for API (if users exist)
   app.addHook('onRequest', async (req, reply) => {
-    if (!process.env.ADMIN_PASSWORD) return; // Open mode if no password set
+    if (!hasUsers && !env.ADMIN_PASSWORD) return; // Open mode if no users/password set
     if (req.method === 'OPTIONS') return; // Pre-flight
     if (req.url === '/health' || req.url.startsWith('/api/auth')) return;
 

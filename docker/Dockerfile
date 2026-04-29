@@ -18,20 +18,27 @@ RUN pnpm build
 # stage 2: runtime
 FROM node:24-slim
 
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable pnpm
+
 WORKDIR /app
 
-COPY --from=builder /app/apps/api/dist .
+# Copy package.json files and lockfile to install dependencies
+COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./
+COPY --from=builder /app/apps/api/package.json ./apps/api/
+COPY --from=builder /app/packages/shared/package.json ./packages/shared/
+
+# Copy built files (matching the original structure)
+COPY --from=builder /app/apps/api/dist ./
 COPY --from=builder /app/apps/web/dist ./public
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 
-# Because the monorepo hoisting might put bettersqlite3 in root or in api, we need the whole tree, 
-# but for a production ready approach we just copy what we need. Since this is an MVP monorepo, 
-# copying the node_modules as above works if we maintain the structure. We map the package.json so it finds it.
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
-COPY --from=builder /app/packages/shared/package.json ./packages/shared/package.json
+# Copy .npmrc if it exists (preserves pnpm registry config)
+COPY --from=builder /app/.npmrc ./ 2>/dev/null || true
+
+# Install only production dependencies with correct symlink structure
+RUN pnpm install --prod --frozen-lockfile
 
 # Environment default
 ENV PORT=3000

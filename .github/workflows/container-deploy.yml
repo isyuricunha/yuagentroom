@@ -89,11 +89,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
+- name: Build and push Docker image
         if: steps.semantic.outputs.new_release_published == 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ./docker/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |

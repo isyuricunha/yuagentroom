@@ -49,7 +49,7 @@ pnpm build
 pnpm lint
 
 # Type check (optional, for type safety)
-pnpm type-check
+pnpm run check-types
 ```
 
 ## Docker Deployment

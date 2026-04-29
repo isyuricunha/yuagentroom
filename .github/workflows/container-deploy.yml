@@ -51,8 +51,8 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Type-check
-        run: pnpm type-check
+- name: Type-check
+         run: pnpm run check-types
 
       - name: Test
         run: pnpm -r --if-present run test

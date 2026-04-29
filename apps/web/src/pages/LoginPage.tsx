@@ -1,9 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Lock, Eye, EyeOff, ShieldCheck, UserPlus, LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { login, register } from '../lib/api';
 
 type AuthMode = 'login' | 'register';
+
+async function getAuthStatus(): Promise<{ hasUsers: boolean; legacyMode: boolean }> {
+  try {
+    const res = await fetch('/api/auth/status');
+    if (res.ok) {
+      return res.json();
+    }
+  } catch {
+    // Ignore errors - default to user mode
+  }
+  return { hasUsers: true, legacyMode: false };
+}
 
 export function LoginPage() {
   const [mode, setMode] = useState<AuthMode>('login');
@@ -13,7 +25,14 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [legacyMode, setLegacyMode] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    getAuthStatus().then((status) => {
+      setLegacyMode(status.legacyMode);
+    });
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -23,7 +42,7 @@ export function LoginPage() {
     try {
       let data: { token: string };
       if (mode === 'login') {
-        data = await login({ identifier: username, password });
+        data = await login({ identifier: legacyMode ? '' : username, password });
       } else {
         data = await register({ username, email, password });
       }
@@ -48,8 +67,14 @@ export function LoginPage() {
           <div className="login-logo-icon">
             <ShieldCheck size={32} color="var(--accent)" />
           </div>
-          <h1>{mode === 'login' ? 'Welcome Back' : 'Create Account'}</h1>
-          <p>{mode === 'login' ? 'Enter your credentials to access the system.' : 'Register to join the agent grid.'}</p>
+          <h1>{mode === 'login' ? (legacyMode ? 'Admin Access' : 'Welcome Back') : 'Create Account'}</h1>
+          <p>
+            {mode === 'login'
+              ? legacyMode
+                ? 'Enter the admin password to access the system.'
+                : 'Enter your credentials to access the system.'
+              : 'Register to join the agent grid.'}
+          </p>
         </div>
 
         <div className="auth-toggle">
@@ -68,21 +93,23 @@ export function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="field">
-            <label>Username</label>
-            <div className="input-wrapper">
-              <Lock className="input-icon-left" size={16} />
-              <input
-                type="text"
-                className="input"
-                placeholder="your_username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoFocus
-                required
-              />
+          {!legacyMode && (
+            <div className="field">
+              <label>Username</label>
+              <div className="input-wrapper">
+                <Lock className="input-icon-left" size={16} />
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="your_username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoFocus
+                  required={!legacyMode}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {mode === 'register' && (
             <div className="field">

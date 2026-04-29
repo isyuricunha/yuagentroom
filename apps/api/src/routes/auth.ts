@@ -22,25 +22,33 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
     const { username, email, password } = req.body;
     const identifier = username || email;
 
+    const client = await getDb();
+
+    // Check if any users exist (for legacy mode detection)
+    const existingUsers = await (client.db as any)
+      .select()
+      .from(client.schema.users)
+      .limit(1);
+    const hasUsers = existingUsers.length > 0;
+
+    // Legacy auth: If no users exist and ADMIN_PASSWORD is set, only password is required
+    if (!hasUsers && env.ADMIN_PASSWORD) {
+      if (!password) {
+        return reply.status(400).send({ error: 'Password required' });
+      }
+      if (password === env.ADMIN_PASSWORD) {
+        const token = fastify.jwt.sign({ access: true });
+        return reply.send({ token });
+      }
+      return reply.status(401).send({ error: 'Invalid password' });
+    }
+
+    // Regular auth: Identifier is required
     if (!identifier || !password) {
       return reply.status(400).send({ error: 'Username/email and password required' });
     }
 
-    const client = await getDb();
-
-    // Fallback: If no users exist and ADMIN_PASSWORD is set, use legacy auth
-    if (env.ADMIN_PASSWORD) {
-      const users = await (client.db as any)
-        .select()
-        .from(client.schema.users)
-        .limit(1);
-
-      if (users.length === 0 && password === env.ADMIN_PASSWORD) {
-        const token = fastify.jwt.sign({ access: true });
-        return reply.send({ token });
-      }
-    }
-
+    // ... rest of the function continues
     const users = await (client.db as any)
       .select()
       .from(client.schema.users)
@@ -143,6 +151,19 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
     } catch {
       return reply.status(401).send({ error: 'Unauthorized' });
     }
+  });
+
+  fastify.get('/auth/status', async (_req, reply) => {
+    const client = await getDb();
+    const userCount = await (client.db as any)
+      .select()
+      .from(client.schema.users)
+      .limit(1);
+    const hasUsers = userCount.length > 0;
+    return reply.send({
+      hasUsers,
+      legacyMode: !hasUsers && !!env.ADMIN_PASSWORD,
+    });
   });
 
   fastify.get('/auth/verify', async (req, reply) => {

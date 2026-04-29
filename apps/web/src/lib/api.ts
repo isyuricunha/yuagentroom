@@ -1,4 +1,4 @@
-import type { Agent, Room, Message, RoomWithAgents, User, AuthResponse } from '@agentroom/shared';
+import type { Agent, Room, Message, RoomWithAgents, User, AuthResponse, CreateAgentInput } from '@agentroom/shared';
 
 const BASE = '/api';
 
@@ -67,15 +67,6 @@ export async function getCurrentUser(): Promise<User | null> {
 
 export async function listAgents(): Promise<Agent[]> {
   return request<Agent[]>('/agents');
-}
-
-export interface CreateAgentInput {
-  name: string;
-  systemPrompt: string;
-  model: string;
-  reasoningEffort?: 'none' | 'low' | 'medium' | 'high';
-  providerUrl: string;
-  apiKey: string;
 }
 
 export async function createAgent(input: CreateAgentInput): Promise<Agent> {

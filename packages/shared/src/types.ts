@@ -67,3 +67,12 @@ export interface AuthResponse {
   token: string;
   user: User;
 }
+
+export interface CreateAgentInput {
+  name: string;
+  systemPrompt: string;
+  model: string;
+  reasoningEffort?: 'none' | 'low' | 'medium' | 'high';
+  providerUrl?: string;
+  apiKey?: string;
+}

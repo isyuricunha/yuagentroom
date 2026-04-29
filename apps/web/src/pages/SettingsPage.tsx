@@ -22,7 +22,9 @@ export function SettingsPage() {
         if (data.cached_models) {
           try {
             setModels(JSON.parse(data.cached_models));
-          } catch {}
+          } catch {
+        // Invalid JSON in cached_models, ignore
+        }
         }
       } catch (err) {
         console.error('Failed to load settings', err);
@@ -43,7 +45,7 @@ export function SettingsPage() {
         global_api_key: apiKey
       });
       setMessage('Settings saved securely.');
-    } catch (err) {
+    } catch {
       setMessage('Failed to save settings.');
     } finally {
       setSaving(false);
@@ -62,7 +64,7 @@ export function SettingsPage() {
       const fetchedModels = await api.getModels(true);
       setModels(fetchedModels);
       setMessage(`Successfully fetched ${fetchedModels.length} models.`);
-    } catch (err) {
+    } catch {
       setMessage('Failed to fetch models from API.');
     } finally {
       setRefreshing(false);

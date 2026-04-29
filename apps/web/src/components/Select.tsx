@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useLayoutEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 
 interface SelectOption {
@@ -18,9 +18,13 @@ export function Select({ value, onChange, options, placeholder = 'Select...', al
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState(value);
   const containerRef = useRef<HTMLDivElement>(null);
+  const prevValueRef = useRef(value);
 
-  useEffect(() => {
-    setInputValue(value);
+  useLayoutEffect(() => {
+    if (prevValueRef.current !== value) {
+      setInputValue(value);
+      prevValueRef.current = value;
+    }
   }, [value]);
 
   useEffect(() => {

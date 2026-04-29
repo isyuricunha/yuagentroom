@@ -32,7 +32,9 @@ export function AgentForm({ initialData, onSubmit, onCancel }: AgentFormProps) {
           setProviderUrl(settings.global_provider_url || '');
         }
         if (settings.cached_models) setAvailableModels(JSON.parse(settings.cached_models));
-      } catch (err) {}
+      } catch {
+        // Silently fail - settings optional
+      }
     }
     fetchGlobals();
   }, [initialData]);
@@ -87,10 +89,10 @@ export function AgentForm({ initialData, onSubmit, onCancel }: AgentFormProps) {
 
       <div className="field">
         <label>Reasoning Effort (for o1/o3 models)</label>
-        <Select
-          value={reasoningEffort}
-          onChange={(v) => setReasoningEffort(v as any)}
-          options={[
+<Select
+           value={reasoningEffort}
+           onChange={(v) => setReasoningEffort(v as 'none' | 'low' | 'medium' | 'high')}
+           options={[
             { value: 'none', label: 'None (Regular)' },
             { value: 'low', label: 'Low effort' },
             { value: 'medium', label: 'Medium effort' },

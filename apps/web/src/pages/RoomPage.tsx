@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router';
-import type { Agent, Message, RoomWithAgents, ServerEvent } from '@agentroom/shared';
+import type { Agent, Message, RoomWithAgents, ServerEvent, CreateAgentInput } from '@agentroom/shared';
 import { getRoom, getRoomMessages, listAgents } from '../lib/api.ts';
 import { RoomWebSocket } from '../lib/ws.ts';
 import { MessageBubble } from '../components/MessageBubble.tsx';
@@ -183,7 +183,7 @@ export function RoomPage() {
     }
   };
 
-  const handleUpdateAgent = async (input: any) => {
+  const handleUpdateAgent = async (input: Partial<CreateAgentInput>) => {
     if (!editingAgent) return;
     const updated = await updateAgent(editingAgent.id, input);
     

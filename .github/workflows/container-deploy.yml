@@ -3,17 +3,17 @@ name: Container Deploy
 on:
   push:
     branches: [ "main" ]
-    paths-ignore:
-      - "README.md"
-      - "LICENSE"
-      - "LICENSE.txt"
-      - ".env.example"
-      - ".env.docker.example"
-      - ".env.local.example"
-      - "apps/web/.env.example"
-      - "**/*.md"
-      - "docker-compose*.yml"
-      - ".github/**/*.md"
+  paths-ignore:
+    - "README.md"
+    - "LICENSE"
+    - "LICENSE.txt"
+    - ".env.example"
+    - ".env.docker.example"
+    - ".env.local.example"
+    - "apps/web/.env.example"
+    - "**/*.md"
+    - "docker-compose*.yml"
+    - ".github/**/*.md"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -111,89 +111,3 @@ jobs:
             org.opencontainers.image.source=${{ github.repositoryUrl }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      - name: Pull fat image (amd64)
-        if: steps.semantic.outputs.new_release_published == 'true'
-        env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          VERSION: ${{ steps.semantic.outputs.new_release_git_tag }}
-        run: |
-          set -euo pipefail
-          docker pull --platform linux/amd64 "${DOCKERHUB_USERNAME}/yuagentroom:${VERSION}"
-          docker tag "${DOCKERHUB_USERNAME}/yuagentroom:${VERSION}" "yuagentroom:${VERSION}-fat-amd64"
-
-      - name: Slim image (amd64)
-        if: steps.semantic.outputs.new_release_published == 'true'
-        env:
-          DATABASE_URL: postgresql://yuagentroom:change_me_yuagentroom_password@db:5432/yuagentroom
-          DSLIM_RC_ENV: DATABASE_URL=${{ env.DATABASE_URL }}
-        uses: kitabisa/docker-slim-action@v1
-        with:
-          target: yuagentroom:${{ steps.semantic.outputs.new_release_git_tag }}-fat-amd64
-          tag: ${{ steps.semantic.outputs.new_release_git_tag }}-slim-amd64
-
-      - name: Pull fat image (arm64)
-        if: steps.semantic.outputs.new_release_published == 'true'
-        env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          VERSION: ${{ steps.semantic.outputs.new_release_git_tag }}
-        run: |
-          set -euo pipefail
-          docker pull --platform linux/arm64 "${DOCKERHUB_USERNAME}/yuagentroom:${VERSION}"
-          docker tag "${DOCKERHUB_USERNAME}/yuagentroom:${VERSION}" "yuagentroom:${VERSION}-fat-arm64"
-
-      - name: Slim image (arm64)
-        if: steps.semantic.outputs.new_release_published == 'true'
-        env:
-          DATABASE_URL: postgresql://yuagentroom:change_me_yuagentroom_password@db:5432/yuagentroom
-          DSLIM_RC_ENV: DATABASE_URL=${{ env.DATABASE_URL }}
-        uses: kitabisa/docker-slim-action@v1
-        with:
-          target: yuagentroom:${{ steps.semantic.outputs.new_release_git_tag }}-fat-arm64
-          tag: ${{ steps.semantic.outputs.new_release_git_tag }}-slim-arm64
-
-      - name: Push slim images (arch tags)
-        if: steps.semantic.outputs.new_release_published == 'true'
-        env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          REPO: ${{ github.repository }}
-          VERSION: ${{ steps.semantic.outputs.new_release_git_tag }}
-        run: |
-          set -euo pipefail
-
-          for arch in amd64 arm64; do
-            docker tag "yuagentroom:${VERSION}-slim-${arch}" "${DOCKERHUB_USERNAME}/yuagentroom:${VERSION}-slim-${arch}"
-            docker push "${DOCKERHUB_USERNAME}/yuagentroom:${VERSION}-slim-${arch}"
-
-            docker tag "yuagentroom:${VERSION}-slim-${arch}" "ghcr.io/${REPO}:${VERSION}-slim-${arch}"
-            docker push "ghcr.io/${REPO}:${VERSION}-slim-${arch}"
-          done
-
-      - name: Create and push slim manifests (multi-arch tags)
-        if: steps.semantic.outputs.new_release_published == 'true'
-        env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          REPO: ${{ github.repository }}
-          VERSION: ${{ steps.semantic.outputs.new_release_git_tag }}
-        run: |
-          set -euo pipefail
-
-          docker buildx imagetools create \
-            --tag "${DOCKERHUB_USERNAME}/yuagentroom:${VERSION}-slim" \
-            "${DOCKERHUB_USERNAME}/yuagentroom:${VERSION}-slim-amd64" \
-            "${DOCKERHUB_USERNAME}/yuagentroom:${VERSION}-slim-arm64"
-
-          docker buildx imagetools create \
-            --tag "${DOCKERHUB_USERNAME}/yuagentroom:latest-slim" \
-            "${DOCKERHUB_USERNAME}/yuagentroom:${VERSION}-slim-amd64" \
-            "${DOCKERHUB_USERNAME}/yuagentroom:${VERSION}-slim-arm64"
-
-          docker buildx imagetools create \
-            --tag "ghcr.io/${REPO}:${VERSION}-slim" \
-            "ghcr.io/${REPO}:${VERSION}-slim-amd64" \
-            "ghcr.io/${REPO}:${VERSION}-slim-arm64"
-
-          docker buildx imagetools create \
-            --tag "ghcr.io/${REPO}:latest-slim" \
-            "ghcr.io/${REPO}:${VERSION}-slim-amd64" \
-            "ghcr.io/${REPO}:${VERSION}-slim-arm64"

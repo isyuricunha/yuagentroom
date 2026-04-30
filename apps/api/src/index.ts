@@ -1,7 +1,6 @@
 import Fastify from 'fastify';
 import fastifyJwt from '@fastify/jwt';
 import fastifyFormbody from '@fastify/formbody';
-import fastifyCookie from '@fastify/cookie';
 import { config } from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -44,15 +43,11 @@ async function main(): Promise<void> {
   // Body parser for JSON
   await app.register(fastifyFormbody);
 
-  // Setup JWT
-await app.register(fastifyCookie);
-await app.register(fastifyJwt, {
-  secret: process.env.JWT_SECRET || 'super-secret-agentroom-key-998877',
-  cookie: {
-    cookieName: 'token',
-    signed: false,
-  },
-});
+  // Setup JWT - Uses Authorization: Bearer header by default
+  await app.register(fastifyJwt, {
+    secret: process.env.JWT_SECRET || 'super-secret-agentroom-key-998877',
+    // No cookie config - reads from Authorization header by default
+  });
 
   // Require Authentication via JWT for API (if users exist)
   app.addHook('onRequest', async (req, reply) => {
@@ -73,7 +68,7 @@ await app.register(fastifyJwt, {
     }
   });
 
-// REST routes
+  // REST routes
   await app.register(authPlugin, { prefix: '/api' });
   await app.register(agentsPlugin, { prefix: '/api' });
   await app.register(roomsPlugin, { prefix: '/api' });

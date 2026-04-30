@@ -31,17 +31,28 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
       .limit(1);
     const hasUsers = existingUsers.length > 0;
 
-    // Legacy auth: If no users exist and ADMIN_PASSWORD is set, only password is required
-    if (!hasUsers && env.ADMIN_PASSWORD) {
-      if (!password) {
-        return reply.status(400).send({ error: 'Password required' });
-      }
-      if (password === env.ADMIN_PASSWORD) {
-        const token = fastify.jwt.sign({ access: true });
-        return reply.send({ token });
-      }
-      return reply.status(401).send({ error: 'Invalid password' });
-    }
+        // Legacy auth: If no users exist and ADMIN_PASSWORD is set, only password is required
+        if (!hasUsers && env.ADMIN_PASSWORD) {
+          if (!password) {
+            return reply.status(400).send({ error: 'Password required' });
+          }
+          if (password === env.ADMIN_PASSWORD) {
+            // Create a virtual admin user ID for legacy mode
+            const legacyUserId = 'legacy-admin-' + crypto.randomUUID();
+            const token = fastify.jwt.sign({ userId: legacyUserId, role: 'admin' });
+            return reply.send({ 
+              token, 
+              user: { 
+                id: legacyUserId, 
+                username: 'admin', 
+                email: 'admin@localhost', 
+                role: 'admin' as const, 
+                createdAt: new Date().toISOString() 
+              } 
+            });
+          }
+          return reply.status(401).send({ error: 'Invalid password' });
+        }
 
     // Regular auth: Identifier is required
     if (!identifier || !password) {
@@ -131,26 +142,40 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
     return reply.send({ message: 'Logged out successfully' });
   });
 
-  fastify.get('/auth/me', async (req, reply) => {
-    try {
-      const payload = await req.jwtVerify<{ userId: string }>();
-      const client = await getDb();
-      const users = await (client.db as any)
-        .select()
-        .from(client.schema.users)
-        .where(eq(client.schema.users.id, payload.userId))
-        .limit(1);
-
-      const user = users[0];
-      if (!user) {
-        return reply.status(401).send({ error: 'User not found' });
-      }
-
-      return reply.send({ user: { id: user.id, username: user.username, email: user.email, role: user.role, createdAt: user.createdAt } });
-    } catch {
-      return reply.status(401).send({ error: 'Unauthorized' });
+fastify.get('/auth/me', async (req, reply) => {
+  try {
+    const payload = await req.jwtVerify<{ userId: string; role?: string }>();
+    
+    // Handle legacy mode (virtual admin user)
+    if (payload.userId?.startsWith('legacy-admin-')) {
+      return reply.send({ 
+        user: { 
+          id: payload.userId, 
+          username: 'admin', 
+          email: 'admin@localhost', 
+          role: (payload.role as 'admin' | 'user') || 'admin', 
+          createdAt: new Date().toISOString() 
+        } 
+      });
     }
-  });
+    
+    const client = await getDb();
+    const users = await (client.db as any)
+      .select()
+      .from(client.schema.users)
+      .where(eq(client.schema.users.id, payload.userId))
+      .limit(1);
+
+    const user = users[0];
+    if (!user) {
+      return reply.status(401).send({ error: 'User not found' });
+    }
+
+    return reply.send({ user: { id: user.id, username: user.username, email: user.email, role: user.role, createdAt: user.createdAt } });
+  } catch {
+    return reply.status(401).send({ error: 'Unauthorized' });
+  }
+});
 
   fastify.get('/auth/status', async (_req, reply) => {
     const client = await getDb();

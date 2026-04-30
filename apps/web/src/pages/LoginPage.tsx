@@ -32,11 +32,12 @@ export function LoginPage() {
         if (value.length < 3) return 'Username must be at least 3 characters';
         if (!/^[a-zA-Z0-9_]+$/.test(value)) return 'Username can only contain letters, numbers, and underscores';
         return null;
-      case 'email':
+      case 'email': {
         if (!value.trim()) return 'Email is required';
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(value)) return 'Please enter a valid email address';
         return null;
+      }
       case 'password':
         if (!value) return 'Password is required';
         if (value.length < 6) return 'Password must be at least 6 characters';
@@ -75,7 +76,9 @@ export function LoginPage() {
 
     if (mode === 'register') {
       const emailError = validateField('email', email);
-      if (emailError) errors.push(emailError);
+      if (emailError) {
+        errors.push(emailError);
+      }
     }
 
     const passwordError = validateField('password', password);

@@ -37,7 +37,7 @@ async function request<T>(
 
 // ─── Auth ───────────────────────────────────────────────────────────────
 
-export async function login(input: { username: string; password: string }): Promise<AuthResponse> {
+export async function login(input: { username?: string; email?: string; password: string }): Promise<AuthResponse> {
   return request<AuthResponse>('/auth/login', {
     method: 'POST',
     body: JSON.stringify(input),

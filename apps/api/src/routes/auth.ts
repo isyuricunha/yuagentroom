@@ -3,6 +3,69 @@ import { getDb } from '../db/index.js';
 import { eq } from 'drizzle-orm';
 import { readEnv } from '../utils/env.js';
 
+// Rate limiting store for auth attempts
+const loginAttempts = new Map<string, { count: number; firstAttempt: number }>();
+const CLEANUP_INTERVAL = 60000; // Clean up every minute
+const MAX_ATTEMPTS = 5; // Max attempts per window
+const WINDOW_MS = 15 * 60 * 1000; // 15 minutes window
+const BAN_MS = 15 * 60 * 1000; // 15 minutes ban
+
+// Clean up old entries periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, data] of loginAttempts.entries()) {
+    if (now - data.firstAttempt > WINDOW_MS + BAN_MS) {
+      loginAttempts.delete(key);
+    }
+  }
+}, CLEANUP_INTERVAL);
+
+function checkRateLimit(identifier: string): { allowed: boolean; remaining: number; resetIn: number } {
+  const now = Date.now();
+  const record = loginAttempts.get(identifier);
+  
+  if (!record) {
+    return { allowed: true, remaining: MAX_ATTEMPTS - 1, resetIn: WINDOW_MS };
+  }
+  
+  // If banned, check if ban has expired
+  const banEndTime = record.firstAttempt + WINDOW_MS + BAN_MS;
+  if (now > banEndTime) {
+    loginAttempts.delete(identifier);
+    return { allowed: true, remaining: MAX_ATTEMPTS - 1, resetIn: WINDOW_MS };
+  }
+  
+  // Check if within window
+  const windowEnd = record.firstAttempt + WINDOW_MS;
+  if (now > windowEnd) {
+    // Window expired, reset
+    loginAttempts.set(identifier, { count: 1, firstAttempt: now });
+    return { allowed: true, remaining: MAX_ATTEMPTS - 1, resetIn: WINDOW_MS };
+  }
+  
+  // Within window, check count
+  if (record.count >= MAX_ATTEMPTS) {
+    return { allowed: false, remaining: 0, resetIn: banEndTime - now };
+  }
+  
+  return { allowed: true, remaining: MAX_ATTEMPTS - record.count - 1, resetIn: windowEnd - now };
+}
+
+function recordLoginAttempt(identifier: string, success: boolean): void {
+  const now = Date.now();
+  if (success) {
+    loginAttempts.delete(identifier);
+    return;
+  }
+  
+  const record = loginAttempts.get(identifier);
+  if (!record) {
+    loginAttempts.set(identifier, { count: 1, firstAttempt: now });
+  } else {
+    record.count++;
+  }
+}
+
 async function hashPassword(password: string): Promise<string> {
   const { default: bcrypt } = await import('bcryptjs');
   return bcrypt.hash(password, 10);
@@ -27,6 +90,12 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
       return reply.status(400).send({ error: 'Username/email and password required' });
     }
 
+    // Check rate limit
+    const rateLimit = checkRateLimit(identifier);
+    if (!rateLimit.allowed) {
+      return reply.status(429).send({ error: 'Too many login attempts. Please try again later.' });
+    }
+
     const client = await getDb();
 
     const users = await (client.db as any)
@@ -48,6 +117,7 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
     }
 
     if (!user || !(await comparePassword(password, user.passwordHash))) {
+      recordLoginAttempt(identifier, false);
       return reply.status(401).send({ error: 'Invalid credentials' });
     }
 
@@ -57,6 +127,9 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
       .update(client.schema.users)
       .set({ lastLoginAt: now })
       .where(eq(client.schema.users.id, user.id));
+
+    // Record successful login
+    recordLoginAttempt(identifier, true);
 
     // Check if this is the user's first login
     const isFirstLogin = user.firstLogin === 1;
@@ -213,8 +286,8 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
       const payload = await req.jwtVerify<{ userId: string; role?: string }>();
       const { newPassword } = req.body;
 
-      if (!newPassword || newPassword.length < 6) {
-        return reply.status(400).send({ error: 'Password must be at least 6 characters' });
+      if (!newPassword || newPassword.length < 8) {
+        return reply.status(400).send({ error: 'Password must be at least 8 characters' });
       }
 
       const client = await getDb();

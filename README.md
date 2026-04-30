@@ -67,6 +67,7 @@ docker-compose --profile postgres up -d
 ```
 
 This will start:
+
 - **yuagentroom**: The main application (API + Web UI) on port 3000
 - **db**: PostgreSQL database (optional, only with `--profile postgres`)
 
@@ -89,12 +90,8 @@ DATABASE_URL=sqlite:./data/db.sqlite
 JWT_SECRET=change_me_in_production
 
 # Allow user registration (optional - default: false)
-# Set to "true" to allow new user signups
+# Set to "true" to allow new user signups via the web UI
 ALLOW_REGISTRATION=false
-
-# Admin password fallback (optional - for backward compatibility)
-# Only used if no users exist and ALLOW_REGISTRATION is false
-ADMIN_PASSWORD=change_me_password
 
 # Redis for pub/sub (optional - enables multi-instance scaling)
 # REDIS_URL=redis://redis:6379
@@ -102,19 +99,25 @@ ADMIN_PASSWORD=change_me_password
 
 ### Authentication
 
-YuAgentRoom uses a user-based authentication system:
+YuAgentRoom uses a user-based authentication system with the following defaults:
 
-- **First User Auto-Admin**: The first registered user automatically becomes an admin
+- **Default Admin User**: On first startup, a default admin user is automatically created:
+  - **Username**: `admin`
+  - **Password**: `admin123`
+- **First Login**: Users must change their password on first login for security
 - **Registration Control**: Set `ALLOW_REGISTRATION=true` to allow new signups (default: disabled)
 - **Password Security**: Passwords are hashed with bcrypt (10 rounds)
 - **JWT Sessions**: Tokens expire after 30 days
 
 **Getting Started:**
-1. Set `ALLOW_REGISTRATION=true` in `docker-compose.yml`
-2. Restart the container: `docker-compose down && docker-compose up -d`
-3. Open the web UI and register the first user (automatically becomes admin)
-4. Set `ALLOW_REGISTRATION=false` to disable further registrations
-5. Share the admin credentials with your team or create additional users as needed
+
+1. Start the application with Docker Compose
+2. Open the web UI at <http://localhost:3000>
+3. Login with default credentials: username `admin`, password `admin123`
+4. You will be prompted to change your password on first login
+5. After changing your password, you can access the main application
+6. Set `ALLOW_REGISTRATION=true` in `docker-compose.yml` if you need to create additional users
+7. Use the Admin panel (accessible from the settings) to manage users
 
 ### Building Docker Image
 
@@ -140,8 +143,7 @@ docker-compose build
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `ALLOW_REGISTRATION` | Enable user signups | `false` |
-| `ADMIN_PASSWORD` | Fallback admin password | (empty) |
+| `ALLOW_REGISTRATION` | Enable user signups via UI | `false` |
 | `REDIS_URL` | Redis connection for pub/sub | (optional) |
 
 ### API Keys
@@ -153,24 +155,26 @@ docker-compose build
 ```
 yuagentroom/
 ├── apps/
-│   ├── api/          # Fastify API server
-│   └── web/          # React frontend
+│   ├── api/ # Fastify API server
+│   └── web/ # React frontend
 ├── packages/
-│   └── shared/       # Shared TypeScript types
+│   └── shared/ # Shared TypeScript types
 ├── docker/
-│   └── Dockerfile    # Multi-stage build
+│   └── Dockerfile # Multi-stage build
 └── docker-compose.yml
 ```
 
 ## API
 
 The API server provides REST endpoints for:
+
 - User authentication
 - Agent management
 - Room management
 - Message handling
 
 WebSocket endpoint for real-time communication:
+
 - `ws://localhost:3000/ws` - Real-time room events
 
 ## License

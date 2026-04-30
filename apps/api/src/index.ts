@@ -34,8 +34,8 @@ async function createDefaultAdminUser(dbClient: Awaited<ReturnType<typeof getDb>
     return; // Users already exist
   }
 
-  // Create default admin user with username "admin" and password "admin"
-  const adminPasswordHash = await hashPassword('admin');
+  // Create default admin user with username "admin" and password "admin123"
+  const adminPasswordHash = await hashPassword('admin123');
   const now = new Date().toISOString();
   const adminId = crypto.randomUUID();
 

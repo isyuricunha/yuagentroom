@@ -22,10 +22,12 @@ services:
       # JWT secret for session tokens (required, change in production!)
       - JWT_SECRET=change_me_in_production
       # User registration:
-      # - ALLOW_REGISTRATION=true - allows new user registration
-      # - ALLOW_REGISTRATION=false (default) - registration disabled, first user must be created manually
-      # Legacy mode: If ADMIN_PASSWORD is set and no users exist, it allows one-time registration
-      - ADMIN_PASSWORD=
+      # - ALLOW_REGISTRATION=true - allows new user registration via UI
+      # - ALLOW_REGISTRATION=false (default) - registration disabled
+      # Note: On first startup, a default admin user is created:
+      #   - Username: admin
+      #   - Password: admin123 (user must change on first login)
+      - ALLOW_REGISTRATION=false
     restart: unless-stopped
 
   # PostgreSQL database (optional - only needed if using postgres instead of sqlite)
@@ -41,7 +43,7 @@ services:
     ports:
       - "5432:5432"
     profiles:
-      - postgres  # Optional service - only started with --profile postgres
+      - postgres # Optional service - only started with --profile postgres
     restart: unless-stopped
 
 volumes:

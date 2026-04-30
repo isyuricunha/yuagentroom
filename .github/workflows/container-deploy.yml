@@ -2,18 +2,19 @@ name: Container Deploy
 
 on:
   push:
-    branches: [ "main" ]
-  paths-ignore:
-    - "README.md"
-    - "LICENSE"
-    - "LICENSE.txt"
-    - ".env.example"
-    - ".env.docker.example"
-    - ".env.local.example"
-    - "apps/web/.env.example"
-    - "**/*.md"
-    - "docker-compose*.yml"
-    - ".github/**/*.md"
+    branches:
+      - "main"
+    paths-ignore:
+      - "README.md"
+      - "LICENSE"
+      - "LICENSE.txt"
+      - ".env.example"
+      - ".env.docker.example"
+      - ".env.local.example"
+      - "apps/web/.env.example"
+      - "**/*.md"
+      - "docker-compose*.yml"
+      - ".github/**/*.md"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

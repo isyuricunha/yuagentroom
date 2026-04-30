@@ -8,6 +8,7 @@ import { SettingsPage } from './pages/SettingsPage.tsx';
 import { AdminUsersPage } from './pages/AdminUsersPage.tsx';
 import { LoginPage } from './pages/LoginPage.tsx';
 import { FirstLoginChangePasswordPage } from './pages/FirstLoginChangePasswordPage.tsx';
+import { DashboardPage } from './pages/DashboardPage.tsx';
 import { getCurrentUser } from './lib/api.ts';
 import type { User } from '@agentroom/shared';
 
@@ -63,7 +64,7 @@ function App() {
         <Route path="/first-login-change" element={<FirstLoginChangePasswordPage />} />
 
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-          <Route index element={<Navigate to="/rooms" replace />} />
+          <Route index element={<DashboardPage />} />
           <Route path="agents" element={<AgentsPage />} />
           <Route path="rooms" element={<RoomsPage />} />
           <Route path="settings" element={<SettingsPage />} />

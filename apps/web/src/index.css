@@ -1518,7 +1518,9 @@ code, pre {
 
 .input-icon-left {
   position: absolute;
-  left: 1rem;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
   color: var(--text-muted);
   z-index: 2;
   pointer-events: none;
@@ -1526,7 +1528,9 @@ code, pre {
 
 .input-icon-right {
   position: absolute;
-  right: 3.5rem;
+  right: 3rem;
+  top: 50%;
+  transform: translateY(-50%);
   z-index: 2;
   pointer-events: none;
 }
@@ -1698,6 +1702,25 @@ code, pre {
   position: relative;
   display: flex;
   align-items: center;
+}
+
+/* Input with left icon needs padding-left to avoid text overlap */
+.input-wrapper .input-icon-left + .input,
+.input-wrapper:has(.input-icon-left) .input {
+  padding-left: 2.75rem;
+}
+
+/* Input with right icon needs padding-right to avoid text overlap */
+.input-wrapper .input-icon-right + .input,
+.input-wrapper:has(.input-icon-right) .input {
+  padding-right: 2.75rem;
+}
+
+/* Input with both icons and password toggle */
+.input-wrapper:has(.input-icon-left):has(.password-toggle-btn) .input,
+.input-wrapper:has(.input-icon-left):has(.input-icon-right) .input {
+  padding-left: 2.75rem;
+  padding-right: 2.75rem;
 }
 
 .input-wrapper-focus .input,

@@ -11,13 +11,29 @@ interface AuthStatus {
 }
 
 async function getAuthStatus(): Promise<AuthStatus> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+
   try {
-    const res = await fetch('/api/auth/status');
+    const res = await fetch('/api/auth/status', {
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+    clearTimeout(timeoutId);
+
     if (res.ok) {
       return res.json() as Promise<AuthStatus>;
     }
-  } catch {
-    // Ignore errors - default to user mode
+  } catch (error) {
+    clearTimeout(timeoutId);
+    // Log the error for debugging but don't show to user
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.warn('Auth status check timed out, using default mode');
+    } else {
+      console.warn('Auth status check failed, using default mode:', error);
+    }
   }
   return { hasUsers: true, legacyMode: false };
 }
@@ -37,9 +53,15 @@ export function LoginPage() {
   const firstInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    getAuthStatus().then((status: AuthStatus) => {
-      setLegacyMode(status.legacyMode);
-    });
+    // Add a small delay to allow the API server to be ready
+    // This prevents ECONNREFUSED errors during development startup
+    const timerId = setTimeout(() => {
+      getAuthStatus().then((status: AuthStatus) => {
+        setLegacyMode(status.legacyMode);
+      });
+    }, 1000);
+
+    return () => clearTimeout(timerId);
   }, []);
 
   useEffect(() => {

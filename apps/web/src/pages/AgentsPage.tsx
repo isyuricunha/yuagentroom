@@ -45,7 +45,31 @@ export function AgentsPage() {
     }
 
     useEffect(() => {
-        void loadAgents();
+        let cancelled = false;
+
+        async function loadAgentsEffect() {
+            try {
+                setLoading(true);
+                setError(null);
+                const data = await listAgents();
+                if (cancelled) return;
+                setAgents(data);
+                await loadSettings();
+            } catch (err) {
+                if (cancelled) return;
+                setError(err instanceof Error ? err.message : 'Falha ao carregar agents');
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
+        }
+
+        loadAgentsEffect();
+
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     function handleOpenCreate() {

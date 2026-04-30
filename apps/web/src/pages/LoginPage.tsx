@@ -56,6 +56,7 @@ export function LoginPage() {
     const hasUppercase = /[A-Z]/.test(pwd);
     const hasLowercase = /[a-z]/.test(pwd);
     const hasNumber = /[0-9]/.test(pwd);
+    // eslint-disable-next-line no-useless-escape
     const hasSpecial = /[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;'`~]/.test(pwd);
 
     let score = 0;
@@ -193,7 +194,6 @@ export function LoginPage() {
       }
 
       localStorage.setItem('agentroom_token', data.token);
-
       if (data.user.firstLogin) {
         navigate('/first-login-change');
       } else {
@@ -239,6 +239,7 @@ export function LoginPage() {
 
   function getFieldStatus(field: string): 'default' | 'focus' | 'valid' | 'error' {
     if (fieldFocus === field) return 'focus';
+
     let value: string;
     switch (field) {
       case 'identifier':
@@ -253,6 +254,7 @@ export function LoginPage() {
       default:
         value = '';
     }
+
     const fieldError = getFieldError(field);
     if (value && !fieldError && (field !== 'email' || mode === 'register')) {
       return 'valid';
@@ -410,19 +412,24 @@ export function LoginPage() {
                   <p className="requirements-title">Requisitos da senha:</p>
                   <ul className="requirements-list">
                     <li className={passwordStrength.requirements.hasMinLength ? 'met' : ''}>
-                      <CheckCircle2 size={14} /> Pelo menos 8 caracteres
+                      <CheckCircle2 size={14} />
+                      Pelo menos 8 caracteres
                     </li>
                     <li className={passwordStrength.requirements.hasUppercase ? 'met' : ''}>
-                      <CheckCircle2 size={14} /> Letra maiúscula
+                      <CheckCircle2 size={14} />
+                      Letra maiúscula
                     </li>
                     <li className={passwordStrength.requirements.hasLowercase ? 'met' : ''}>
-                      <CheckCircle2 size={14} /> Letra minúscula
+                      <CheckCircle2 size={14} />
+                      Letra minúscula
                     </li>
                     <li className={passwordStrength.requirements.hasNumber ? 'met' : ''}>
-                      <CheckCircle2 size={14} /> Número
+                      <CheckCircle2 size={14} />
+                      Número
                     </li>
                     <li className={passwordStrength.requirements.hasSpecial ? 'met' : ''}>
-                      <CheckCircle2 size={14} /> Caractere especial
+                      <CheckCircle2 size={14} />
+                      Caractere especial
                     </li>
                   </ul>
                 </div>

@@ -11,15 +11,12 @@ async function request<T>(
     headers.set('Content-Type', 'application/json');
   }
 
-  const token = localStorage.getItem('agentroom_token');
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
-  }
 
-  const res = await fetch(`${BASE}${path}`, {
+const res = await fetch(`${BASE}${path}`, {
     ...options,
     headers,
-  });
+    credentials: 'include',
+});
 
   if (res.status === 204) return undefined as T;
 

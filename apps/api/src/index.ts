@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import fastifyJwt from '@fastify/jwt';
 import fastifyFormbody from '@fastify/formbody';
+import fastifyCookie from '@fastify/cookie';
 import { config } from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -44,9 +45,14 @@ async function main(): Promise<void> {
   await app.register(fastifyFormbody);
 
   // Setup JWT
-  await app.register(fastifyJwt, {
-    secret: process.env.JWT_SECRET || 'super-secret-agentroom-key-998877',
-  });
+await app.register(fastifyCookie);
+await app.register(fastifyJwt, {
+  secret: process.env.JWT_SECRET || 'super-secret-agentroom-key-998877',
+  cookie: {
+    cookieName: 'token',
+    signed: false,
+  },
+});
 
   // Require Authentication via JWT for API (if users exist)
   app.addHook('onRequest', async (req, reply) => {

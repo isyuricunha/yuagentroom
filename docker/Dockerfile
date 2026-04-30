@@ -35,7 +35,8 @@ COPY --from=builder /app/apps/web/dist ./public
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 
 # Copy .npmrc if it exists (preserves pnpm registry config)
-COPY --from=builder /app/.npmrc ./ 2>/dev/null || true
+# Create a simple sh script to handle the copy gracefully
+RUN test -f /app/.npmrc && cp /app/.npmrc ./.npmrc || true
 
 # Install only production dependencies with correct symlink structure
 RUN pnpm install --prod --frozen-lockfile

@@ -82,6 +82,31 @@ export async function deleteUser(id: string): Promise<void> {
   return request<void>(`/users/${id}`, { method: 'DELETE' });
 }
 
+// ─── First Login Password Change ───────────────────────────────────────────
+
+export async function firstLoginChangePassword(newPassword: string): Promise<{ success: boolean; message: string }> {
+  return request<{ success: boolean; message: string }>('/auth/first-login', {
+    method: 'POST',
+    body: JSON.stringify({ newPassword }),
+  });
+}
+
+// ─── User Profile Management ───────────────────────────────────────────────
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+  return request<{ success: boolean; message: string }>('/users/me/password', {
+    method: 'POST',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+}
+
+export async function changeUsername(username: string): Promise<{ success: boolean; message: string }> {
+  return request<{ success: boolean; message: string }>('/users/me/username', {
+    method: 'POST',
+    body: JSON.stringify({ username }),
+  });
+}
+
 // ─── Agents ──────────────────────────────────────────────────────────────
 
 export async function listAgents(): Promise<Agent[]> {

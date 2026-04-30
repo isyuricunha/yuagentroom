@@ -61,6 +61,7 @@ export interface User {
   role: 'admin' | 'user';
   createdAt: string;
   lastLoginAt?: string;
+  firstLogin?: boolean;
 }
 
 export interface AuthResponse {

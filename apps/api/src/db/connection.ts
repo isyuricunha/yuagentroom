@@ -105,23 +105,33 @@ export async function getDb(): Promise<DbClient> {
         value TEXT NOT NULL
       );
 
-      CREATE TABLE IF NOT EXISTS users (
-        id TEXT PRIMARY KEY,
-        username TEXT NOT NULL UNIQUE,
-        email TEXT NOT NULL UNIQUE,
-        password_hash TEXT NOT NULL,
-        role TEXT NOT NULL DEFAULT 'user',
-        created_at TEXT NOT NULL,
-        last_login_at TEXT
-      );
+  CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    username TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'user',
+    created_at TEXT NOT NULL,
+    last_login_at TEXT,
+    first_login INTEGER NOT NULL DEFAULT 1,
+    first_login_at TEXT
+  );
     `);
 
-    // Migration: Add reasoning_effort to agents if it doesn't exist
-    const tableInfo = sqlite.prepare("PRAGMA table_info(agents)").all() as any[];
-    const hasReasoningEffort = tableInfo.some((col) => col.name === 'reasoning_effort');
-    if (!hasReasoningEffort) {
-      sqlite.exec("ALTER TABLE agents ADD COLUMN reasoning_effort TEXT NOT NULL DEFAULT 'none'");
-    }
+  // Migration: Add reasoning_effort to agents if it doesn't exist
+  const tableInfo = sqlite.prepare("PRAGMA table_info(agents)").all() as any[];
+  const hasReasoningEffort = tableInfo.some((col) => col.name === 'reasoning_effort');
+  if (!hasReasoningEffort) {
+    sqlite.exec("ALTER TABLE agents ADD COLUMN reasoning_effort TEXT NOT NULL DEFAULT 'none'");
+  }
+
+  // Migration: Add first_login to users if it doesn't exist
+  const userTableInfo = sqlite.prepare("PRAGMA table_info(users)").all() as any[];
+  const hasFirstLogin = userTableInfo.some((col) => col.name === 'first_login');
+  if (!hasFirstLogin) {
+    sqlite.exec("ALTER TABLE users ADD COLUMN first_login INTEGER NOT NULL DEFAULT 1");
+    sqlite.exec("ALTER TABLE users ADD COLUMN first_login_at TEXT");
+  }
 
     _client = { dialect: 'sqlite', db, schema: sqliteSchema };
     return _client;
@@ -190,23 +200,38 @@ export async function getDb(): Promise<DbClient> {
       value TEXT NOT NULL
     );
 
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
-      username TEXT NOT NULL UNIQUE,
-      email TEXT NOT NULL UNIQUE,
-      password_hash TEXT NOT NULL,
-      role TEXT NOT NULL DEFAULT 'user',
-      created_at TIMESTAMPTZ NOT NULL,
-      last_login_at TIMESTAMPTZ
-    );
+  CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    username TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'user',
+    created_at TIMESTAMPTZ NOT NULL,
+    last_login_at TIMESTAMPTZ,
+    first_login INTEGER NOT NULL DEFAULT 1,
+    first_login_at TIMESTAMPTZ
+  );
   `);
 
   // Migration for PG: add column if missing
   await pool.query(`
-    DO $$ 
-    BEGIN 
+    DO $$
+    BEGIN
       IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='agents' AND column_name='reasoning_effort') THEN
         ALTER TABLE agents ADD COLUMN reasoning_effort TEXT NOT NULL DEFAULT 'none';
+      END IF;
+    END $$;
+  `);
+
+  // Migration for PG: add first_login columns if missing
+  await pool.query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='first_login') THEN
+        ALTER TABLE users ADD COLUMN first_login INTEGER NOT NULL DEFAULT 1;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='first_login_at') THEN
+        ALTER TABLE users ADD COLUMN first_login_at TIMESTAMPTZ;
       END IF;
     END $$;
   `);

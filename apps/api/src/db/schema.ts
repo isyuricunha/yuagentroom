@@ -61,6 +61,8 @@ export const usersSqlite = sqliteTable('users', {
   role: text('role', { enum: ['admin', 'user'] }).notNull().default('user'),
   createdAt: text('created_at').notNull(),
   lastLoginAt: text('last_login_at'),
+  firstLogin: integer('first_login').notNull().default(1),
+  firstLoginAt: text('first_login_at'),
 });
 
 // ─── PostgreSQL schema ─────────────────────────────────────────────────────
@@ -117,4 +119,6 @@ export const usersPg = pgTable('users', {
   role: pgText('role').$type<'admin' | 'user'>().notNull().default('user'),
   createdAt: timestamp('created_at').notNull(),
   lastLoginAt: timestamp('last_login_at'),
+  firstLogin: pgInteger('first_login').notNull().default(1),
+  firstLoginAt: timestamp('first_login_at'),
 });

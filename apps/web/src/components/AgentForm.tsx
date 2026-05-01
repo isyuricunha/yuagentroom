@@ -5,7 +5,7 @@ import { generateRandomAgentName } from '../lib/agent-names.ts';
 import { Button } from './Button.tsx';
 import { Input, Textarea } from './Input.tsx';
 import { Select } from './Select.tsx';
-import { Dice1 } from 'lucide-react';
+import { Dice1, Sparkles, Brain } from 'lucide-react';
 
 interface AgentFormProps {
   initialData?: Agent;
@@ -54,59 +54,74 @@ export function AgentForm({ initialData, onSubmit, onCancel, availableModels: pr
   }
 
   return (
-    <form onSubmit={handleSubmit} className="form-row">
+    <form onSubmit={handleSubmit} className="agent-form">
       {error && <div className="error-banner">{error}</div>}
-      <div className="field">
-        <label>Name</label>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Alice"
-            autoFocus
-            style={{ flex: 1, height: '2.75rem' }}
-          />
-          <button
-            type="button"
-            onClick={() => setName(generateRandomAgentName())}
-            title="Generate Random Name"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '2.5rem',
-              height: '2.75rem',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius)',
-              background: 'var(--bg-input)',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              flexShrink: 0,
-            }}
-          >
-            <Dice1 size={18} />
-          </button>
+
+      {/* Section: Agent Identity */}
+      <div className="form-section">
+        <div className="section-header">
+          <Sparkles size={16} className="section-icon" />
+          <h3 className="section-title">Agent Identity</h3>
+        </div>
+
+        <div className="form-row-compact">
+          <div className="field">
+            <label htmlFor="agent-name">Name</label>
+            <div className="input-with-button">
+              <Input
+                id="agent-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Alice"
+                autoFocus
+                className="agent-name-input"
+              />
+              <button
+                type="button"
+                onClick={() => setName(generateRandomAgentName())}
+                title="Generate Random Name"
+                className="random-name-btn"
+              >
+                <Dice1 size={18} />
+              </button>
+            </div>
+          </div>
+
+          <div className="field">
+            <label>Model</label>
+            <Select
+              allowCustom
+              value={model}
+              onChange={setModel}
+              options={availableModels.map((m) => ({ value: m, label: m }))}
+              placeholder="e.g. gpt-4o"
+            />
+          </div>
         </div>
       </div>
-      <Textarea
-        label="System Prompt"
-        value={systemPrompt}
-        onChange={(e) => setSystemPrompt(e.target.value)}
-        placeholder="Você é Alice, uma assistente de IA..."
-        rows={4}
-      />
-      <div className="field">
-        <label>Model</label>
-        <Select
-          allowCustom
-          value={model}
-          onChange={setModel}
-          options={availableModels.map((m) => ({ value: m, label: m }))}
-          placeholder="e.g. gpt-4o ou seu modelo customizado"
-        />
+
+      {/* Section: Behavior Configuration */}
+      <div className="form-section">
+        <div className="section-header">
+          <Brain size={16} className="section-icon" />
+          <h3 className="section-title">Behavior Configuration</h3>
+        </div>
+
+        <div className="field">
+          <label htmlFor="system-prompt">System Prompt</label>
+          <Textarea
+            id="system-prompt"
+            value={systemPrompt}
+            onChange={(e) => setSystemPrompt(e.target.value)}
+            placeholder="Você é Alice, uma assistente de IA..."
+            rows={6}
+            className="system-prompt-textarea"
+          />
+        </div>
       </div>
-      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+
+      {/* Form Actions */}
+      <div className="form-actions">
         <Button type="button" variant="ghost" onClick={onCancel}>
           Cancel
         </Button>

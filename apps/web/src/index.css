@@ -1930,6 +1930,146 @@ code, pre {
   overflow: hidden;
 }
 
+/* ─── Agent Form Modal Improvements ──────────────────────────────────────── */
+.agent-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.agent-form .form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.agent-form .section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.agent-form .section-icon {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.agent-form .section-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0;
+}
+
+/* Two-column layout for compact fields */
+.agent-form .form-row-compact {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Input with button (for random name generator) */
+.agent-form .input-with-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(10, 10, 15, 0.8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.25rem;
+  transition: all 0.2s ease;
+}
+
+.agent-form .input-with-button:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.agent-form .agent-name-input {
+  flex: 1;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0.5rem 0.75rem !important;
+  background: transparent !important;
+}
+
+.agent-form .agent-name-input:focus {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.agent-form .random-name-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: calc(var(--radius-sm) - 2px);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.agent-form .random-name-btn:hover {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent);
+}
+
+.agent-form .random-name-btn:active {
+  transform: scale(0.95);
+}
+
+/* System prompt textarea */
+.agent-form .system-prompt-textarea {
+  min-height: 140px;
+  line-height: 1.6;
+  font-size: 0.85rem;
+}
+
+/* Form actions footer */
+.agent-form .form-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 0.5rem;
+}
+
+/* Modal improvements */
+.modal {
+  max-width: 560px;
+  padding: 1.75rem;
+}
+
+.modal-header h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-heading);
+  margin: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .agent-form .form-row-compact {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .modal {
+    max-width: 100%;
+    padding: 1.25rem;
+  }
+}
+
 .strength-fill {
   height: 100%;
   border-radius: 2px;

@@ -110,13 +110,13 @@ export function AgentCard({ agent, onEdit, onClone, onDelete }: AgentCardProps) 
                     </>
                 ) : (
                     <>
-                        <Button variant="ghost" size="sm" onClick={() => onClone(agent)} title="Duplicate Agent">
+                        <Button variant="ghost" size="sm" onClick={() => onClone(agent)} title="Duplicate Agent" aria-label="Duplicate agent">
                             <Copy size={16} /> Duplicate
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => onEdit(agent)} title="Edit Agent">
+                        <Button variant="ghost" size="sm" onClick={() => onEdit(agent)} title="Edit Agent" aria-label="Edit agent">
                             <Edit2 size={16} /> Edit
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => setIsDeleting(true)} style={{ color: 'var(--danger)' }} title="Delete Agent">
+                        <Button variant="ghost" size="sm" onClick={() => setIsDeleting(true)} style={{ color: 'var(--danger)' }} title="Delete Agent" aria-label="Delete agent">
                             <Trash2 size={16} /> Delete
                         </Button>
                     </>

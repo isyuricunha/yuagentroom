@@ -1,28 +1,18 @@
 import { NavLink, Outlet, useNavigate } from 'react-router';
 import { Cpu, MessageSquare, Settings, LogOut, Users } from 'lucide-react';
-import { useState, useEffect } from 'react';
 import logo from '../assets/logo.png';
-import { getCurrentUser } from '../lib/api.ts';
-import type { User } from '@agentroom/shared';
+import { useAuth } from '../hooks/useAuth.ts';
 
 export function Layout() {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, isLoading, logout: authLogout } = useAuth();
 
-  useEffect(() => {
-    getCurrentUser().then((u) => {
-      setUser(u);
-      setLoading(false);
-    });
-  }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem('agentroom_token');
+  const handleLogout = async () => {
+    await authLogout();
     navigate('/login');
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div style={{ height: '100vh', background: 'var(--bg-app)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
         Loading...

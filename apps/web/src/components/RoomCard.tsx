@@ -73,6 +73,7 @@ export function RoomCard({ room, onDelete, isDeleting = false }: RoomCardProps) 
             size="sm"
             onClick={() => setShowDeleteConfirm(true)}
             style={{ color: 'var(--danger)', padding: '0.25rem' }}
+            aria-label="Delete room"
           >
             Delete
           </Button>

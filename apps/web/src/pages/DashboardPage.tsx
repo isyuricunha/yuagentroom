@@ -78,7 +78,7 @@ export function DashboardPage() {
         return (
             <div className="dashboard-loading">
                 <div className="dashboard-spinner"></div>
-                <p>Carregando dashboard...</p>
+                <p>Loading dashboard...</p>
             </div>
         );
     }
@@ -88,7 +88,7 @@ export function DashboardPage() {
             <div className="dashboard-error">
                 <p>{error}</p>
                 <button onClick={() => window.location.reload()} className="btn btn-primary">
-                    Tentar Novamente
+                    Try Again
                 </button>
             </div>
         );
@@ -98,8 +98,8 @@ export function DashboardPage() {
         <div className="dashboard-container">
             <div className="dashboard-header">
                 <div className="dashboard-header-content">
-                    <h1>Bem-vindo de Volta{user ? `, ${user.username}` : ''}!</h1>
-                    <p className="dashboard-subtitle">Visão geral do seu ambiente AgentRoom</p>
+                    <h1>Welcome Back{user ? `, ${user.username}` : ''}!</h1>
+                    <p className="dashboard-subtitle">AgentRoom environment overview</p>
                 </div>
                 <div className="dashboard-actions">
                     <button
@@ -108,18 +108,18 @@ export function DashboardPage() {
                         disabled={!stats?.isAdmin}
                     >
                         <Plus size={18} />
-                        Nova Room
+                        New Room
                     </button>
                     <button onClick={() => navigate('/agents')} className="btn btn-secondary">
                         <Cpu size={18} />
-                        Gerenciar Agents
+                        Manage Agents
                     </button>
                 </div>
             </div>
 
             {!stats?.isAdmin && (
                 <div className="dashboard-notice">
-                    <p>ℹ️ Você precisa de permissões de administrador para criar novas rooms.</p>
+                    <p>ℹ️ You need administrator permissions to create new rooms.</p>
                 </div>
             )}
 
@@ -131,7 +131,7 @@ export function DashboardPage() {
                     </div>
                     <div className="stat-content">
                         <span className="stat-value">{stats?.totalRooms || 0}</span>
-                        <span className="stat-label">Total de Rooms</span>
+                        <span className="stat-label">Total Rooms</span>
                     </div>
                     <div className="stat-trend">
                         <TrendingUp size={16} />
@@ -144,7 +144,7 @@ export function DashboardPage() {
                     </div>
                     <div className="stat-content">
                         <span className="stat-value">{stats?.totalAgents || 0}</span>
-                        <span className="stat-label">Total de Agents</span>
+                        <span className="stat-label">Total Agents</span>
                     </div>
                     <div className="stat-trend">
                         <Activity size={16} />
@@ -158,7 +158,7 @@ export function DashboardPage() {
                         </div>
                         <div className="stat-content">
                             <span className="stat-value">{stats?.totalUsers || 0}</span>
-                            <span className="stat-label">Usuários</span>
+                            <span className="stat-label">Users</span>
                         </div>
                         <div className="stat-trend">
                             <Clock size={16} />
@@ -172,7 +172,7 @@ export function DashboardPage() {
                     </div>
                     <div className="stat-content">
                         <span className="stat-value">{stats?.isAdmin ? 'Admin' : 'User'}</span>
-                        <span className="stat-label">Seu Papel</span>
+                        <span className="stat-label">Your Role</span>
                     </div>
                     <div className="stat-trend">
                         <TrendingUp size={16} />
@@ -185,10 +185,10 @@ export function DashboardPage() {
                 <div className="section-header">
                     <h2>
                         <MessageSquare size={20} />
-                        Rooms Recentes
+                        Recent Rooms
                     </h2>
                     <button onClick={() => navigate('/rooms')} className="btn btn-ghost btn-sm">
-                        Ver Todas →
+                        View All →
                     </button>
                 </div>
                 {recentRooms.length > 0 ? (
@@ -203,29 +203,29 @@ export function DashboardPage() {
                                 <div className="card-header">
                                     <h3>{room.name}</h3>
                                     <span className={`status-badge status-${room.status}`}>
-                                        {room.status === 'idle' && 'Aguardando'}
-                                        {room.status === 'running' && 'Rodando'}
-                                        {room.status === 'paused' && 'Pausado'}
+                                        {room.status === 'idle' && 'Waiting'}
+                                        {room.status === 'running' && 'Running'}
+                                        {room.status === 'paused' && 'Paused'}
                                     </span>
                                 </div>
                                 <p className="card-description">
-                                    {room.topic || 'Sem tópico definido'}
+                                    {room.topic || 'No topic defined'}
                                 </p>
                                 <div className="card-meta">
                                     <span>
                                         <Clock size={14} />
-                                        {new Date(room.createdAt).toLocaleDateString('pt-BR')}
+                                        {new Date(room.createdAt).toLocaleDateString()}
                                     </span>
-                                    <span>{room.maxContextMessages} msgs máx.</span>
+                                    <span>{room.maxContextMessages} msgs max</span>
                                 </div>
                             </div>
                         ))}
                     </div>
                 ) : (
                     <div className="empty-state-mini">
-                        <p>Nenhuma room criada ainda.</p>
+                        <p>No rooms created yet.</p>
                         <button onClick={() => navigate('/rooms')} className="btn btn-primary btn-sm">
-                            Criar Primeira Room
+                            Create First Room
                         </button>
                     </div>
                 )}
@@ -236,10 +236,10 @@ export function DashboardPage() {
                 <div className="section-header">
                     <h2>
                         <Cpu size={20} />
-                        Agents Recentes
+                        Recent Agents
                     </h2>
                     <button onClick={() => navigate('/agents')} className="btn btn-ghost btn-sm">
-                        Ver Todos →
+                        View All →
                     </button>
                 </div>
                 {recentAgents.length > 0 ? (
@@ -253,12 +253,12 @@ export function DashboardPage() {
                                 <p className="card-description">
                                     {agent.systemPrompt
                                         ? agent.systemPrompt.substring(0, 100) + '...'
-                                        : 'Sem descrição'}
+                                        : 'No description'}
                                 </p>
                                 <div className="card-meta">
                                     <span>
                                         <Clock size={14} />
-                                        {new Date(agent.createdAt).toLocaleDateString('pt-BR')}
+                                        {new Date(agent.createdAt).toLocaleDateString()}
                                     </span>
                                 </div>
                             </div>
@@ -266,9 +266,9 @@ export function DashboardPage() {
                     </div>
                 ) : (
                     <div className="empty-state-mini">
-                        <p>Nenhum agent criado ainda.</p>
+                        <p>No agents created yet.</p>
                         <button onClick={() => navigate('/agents')} className="btn btn-primary btn-sm">
-                            Criar Primeiro Agent
+                            Create First Agent
                         </button>
                     </div>
                 )}
@@ -277,25 +277,25 @@ export function DashboardPage() {
             {/* Quick Actions */}
             <div className="dashboard-section">
                 <div className="section-header">
-                    <h2>⚡ Ações Rápidas</h2>
+                    <h2>⚡ Quick Actions</h2>
                 </div>
                 <div className="quick-actions-grid">
                     <button onClick={() => navigate('/rooms')} className="quick-action-btn">
                         <MessageSquare size={20} />
-                        <span>Ir para Rooms</span>
+                        <span>Go to Rooms</span>
                     </button>
                     <button onClick={() => navigate('/agents')} className="quick-action-btn">
                         <Cpu size={20} />
-                        <span>Gerenciar Agents</span>
+                        <span>Manage Agents</span>
                     </button>
                     <button onClick={() => navigate('/settings')} className="quick-action-btn">
                         <Settings size={20} />
-                        <span>Configurações</span>
+                        <span>Settings</span>
                     </button>
                     {stats?.isAdmin && (
                         <button onClick={() => navigate('/admin/users')} className="quick-action-btn">
                             <Users size={20} />
-                            <span>Gerenciar Usuários</span>
+                            <span>Manage Users</span>
                         </button>
                     )}
                 </div>

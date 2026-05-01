@@ -1,4 +1,5 @@
 import type { Agent, Room, Message, RoomWithAgents, User, AuthResponse, CreateAgentInput } from '@agentroom/shared';
+import { AUTH_TOKEN_KEY } from './auth-constants';
 
 const BASE = '/api';
 
@@ -12,7 +13,7 @@ async function request<T>(
   }
 
   // Get token from localStorage and add to Authorization header
-  const token = localStorage.getItem('agentroom_token');
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
   if (token && !headers.has('Authorization')) {
     headers.set('Authorization', `Bearer ${token}`);
   }
@@ -53,7 +54,7 @@ export async function register(input: { username: string; email: string; passwor
 
 export async function logout(): Promise<void> {
   await request('/auth/logout', { method: 'POST' });
-  localStorage.removeItem('agentroom_token');
+  localStorage.removeItem(AUTH_TOKEN_KEY);
 }
 
 export async function getCurrentUser(): Promise<User | null> {

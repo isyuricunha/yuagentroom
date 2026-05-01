@@ -14,21 +14,10 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { login, register } from '../lib/api';
+import { calculatePasswordStrength } from '../lib/password-strength';
+import { AUTH_TOKEN_KEY } from '../lib/auth-constants';
 
 type AuthMode = 'login' | 'register';
-
-interface PasswordStrength {
-  score: number;
-  label: string;
-  color: string;
-  requirements: {
-    hasMinLength: boolean;
-    hasUppercase: boolean;
-    hasLowercase: boolean;
-    hasNumber: boolean;
-    hasSpecial: boolean;
-  };
-}
 
 export function LoginPage() {
   const [mode, setMode] = useState<AuthMode>('login');
@@ -51,56 +40,8 @@ export function LoginPage() {
     }, 150);
   }, [mode]);
 
-  const getPasswordStrength = (pwd: string): PasswordStrength => {
-    const hasMinLength = pwd.length >= 8;
-    const hasUppercase = /[A-Z]/.test(pwd);
-    const hasLowercase = /[a-z]/.test(pwd);
-    const hasNumber = /[0-9]/.test(pwd);
-    // eslint-disable-next-line no-useless-escape
-    const hasSpecial = /[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;'`~]/.test(pwd);
 
-    let score = 0;
-    if (hasMinLength) score++;
-    if (hasUppercase) score++;
-    if (hasLowercase) score++;
-    if (hasNumber) score++;
-    if (hasSpecial) score++;
-
-    let label: string;
-    let color: string;
-
-    if (score <= 1) {
-      label = 'Muito fraca';
-      color = 'var(--error)';
-    } else if (score === 2) {
-      label = 'Fraca';
-      color = 'var(--error)';
-    } else if (score === 3) {
-      label = 'Média';
-      color = '#f59e0b';
-    } else if (score === 4) {
-      label = 'Forte';
-      color = 'var(--success, #10b981)';
-    } else {
-      label = 'Muito forte';
-      color = 'var(--success, #10b981)';
-    }
-
-    return {
-      score,
-      label,
-      color,
-      requirements: {
-        hasMinLength,
-        hasUppercase,
-        hasLowercase,
-        hasNumber,
-        hasSpecial,
-      },
-    };
-  };
-
-  const passwordStrength = getPasswordStrength(password);
+  const passwordStrength = calculatePasswordStrength(password);
 
   function validateField(field: string, value: string): string | null {
     switch (field) {
@@ -193,7 +134,7 @@ export function LoginPage() {
         data = await register({ username: identifier, email, password });
       }
 
-      localStorage.setItem('agentroom_token', data.token);
+      localStorage.setItem(AUTH_TOKEN_KEY, data.token);
       if (data.user.firstLogin) {
         navigate('/first-login-change');
       } else {
@@ -230,8 +171,14 @@ export function LoginPage() {
               ? 'email'
               : 'password';
         const fieldError = getFieldError(currentField);
-        if (fieldError === error || (fieldError === null && error.includes(fieldError || ''))) {
+        if (fieldError === error) {
           setError('');
+        } else if (fieldError === null && error) {
+          const fieldNames = { identifier: 'username', email: 'email', password: 'senha' };
+          const fieldName = fieldNames[currentField as keyof typeof fieldNames] || currentField;
+          if (error.toLowerCase().includes(fieldName.toLowerCase())) {
+            setError('');
+          }
         }
       }
     };

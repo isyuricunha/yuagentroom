@@ -1,5 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router';
-import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
 import { Layout } from './components/Layout.tsx';
 import { AgentsPage } from './pages/AgentsPage.tsx';
 import { RoomsPage } from './pages/RoomsPage.tsx';
@@ -9,49 +8,20 @@ import { AdminUsersPage } from './pages/AdminUsersPage.tsx';
 import { LoginPage } from './pages/LoginPage.tsx';
 import { FirstLoginChangePasswordPage } from './pages/FirstLoginChangePasswordPage.tsx';
 import { DashboardPage } from './pages/DashboardPage.tsx';
-import { getCurrentUser } from './lib/api.ts';
-import type { User } from '@agentroom/shared';
+import { useAuth } from './hooks/useAuth.ts';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const [isAuth, setIsAuth] = useState<boolean | null>(null);
-  const location = useLocation();
+  const { isAuthenticated, isLoading } = useAuth();
 
-  useEffect(() => {
-    async function check() {
-      const token = localStorage.getItem('agentroom_token');
-      if (!token) {
-        setIsAuth(false);
-        return;
-      }
-      try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/verify`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setIsAuth(res.ok);
-      } catch {
-        setIsAuth(false);
-      }
-    }
-    check();
-  }, [location.pathname]);
-
-  if (isAuth === null) return <div style={{ height: '100vh', background: 'var(--bg-app)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>Verifying...</div>;
-  if (!isAuth) return <Navigate to="/login" replace />;
+  if (isLoading) return <div style={{ height: '100vh', background: 'var(--bg-app)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>Verifying...</div>;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, isLoading } = useAuth();
 
-  useEffect(() => {
-    getCurrentUser().then((u) => {
-      setUser(u);
-      setLoading(false);
-    });
-  }, []);
-
-  if (loading) return <div style={{ height: '100vh', background: 'var(--bg-app)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>Loading...</div>;
+  if (isLoading) return <div style={{ height: '100vh', background: 'var(--bg-app)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>Loading...</div>;
   if (!user || user.role !== 'admin') return <Navigate to="/rooms" replace />;
   return <>{children}</>;
 }

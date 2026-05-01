@@ -165,7 +165,13 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
     if (!username || !email || !password) {
       return reply.status(400).send({ error: 'Username, email, and password required' });
     }
-
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+    return reply.status(400).send({ error: 'Invalid email format' });
+    }
+    
     if (password.length < 8) {
       return reply.status(400).send({ error: 'Password must be at least 8 characters' });
     }

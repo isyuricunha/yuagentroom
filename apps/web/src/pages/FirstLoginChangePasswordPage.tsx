@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Lock, Eye, EyeOff, ShieldCheck, Loader2, CheckCircle2, AlertCircle, LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { firstLoginChangePassword } from '../lib/api';
+import { validatePassword } from '../lib/validation';
 
 export function FirstLoginChangePasswordPage() {
     const [newPassword, setNewPassword] = useState('');
@@ -25,9 +26,7 @@ export function FirstLoginChangePasswordPage() {
     function validateField(field: string, value: string): string | null {
         switch (field) {
             case 'newPassword':
-                if (!value) return 'Password is required';
-                if (value.length < 6) return 'Password must be at least 6 characters';
-                return null;
+                return validatePassword(value);
             case 'confirmPassword':
                 if (!value) return 'Please confirm your password';
                 if (value !== newPassword) return 'Passwords do not match';

@@ -57,6 +57,15 @@ export const messagesSqlite = sqliteTable('messages', {
   agentId: text('agent_id'),
   role: text('role', { enum: MESSAGE_ROLES }).notNull(),
   content: text('content').notNull(),
+  thoughts: text('thoughts', { mode: 'json' }).$type<string[]>(),
+  createdAt: text('created_at').notNull(),
+});
+
+export const messageReactionsSqlite = sqliteTable('message_reactions', {
+  id: text('id').primaryKey(),
+  messageId: text('message_id').notNull(),
+  userId: text('user_id').notNull(),
+  emoji: text('emoji').notNull(),
   createdAt: text('created_at').notNull(),
 });
 
@@ -87,6 +96,17 @@ export const roomTemplatesSqlite = sqliteTable('room_templates', {
   createdAt: text('created_at').notNull(),
 });
 
+export const scheduledRoomsSqlite = sqliteTable('scheduled_rooms', {
+  id: text('id').primaryKey(),
+  roomId: text('room_id').notNull().unique(),
+  cronExpression: text('cron_expression').notNull(),
+  timezone: text('timezone').notNull().default('UTC'),
+  isActive: integer('is_active').notNull().default(1),
+  lastRun: text('last_run'),
+  nextRun: text('next_run'),
+  createdAt: text('created_at').notNull(),
+});
+
 // ─── PostgreSQL schema ─────────────────────────────────────────────────────
 
 import { pgTable, text as pgText, integer as pgInteger, timestamp } from 'drizzle-orm/pg-core';
@@ -110,6 +130,17 @@ export const roomTemplatesPg = pgTable('room_templates', {
   configJson: pgText('config_json').notNull(),
   agentConfigsJson: pgText('agent_configs_json').notNull(),
   isDefault: pgInteger('is_default').notNull().default(0),
+  createdAt: timestamp('created_at').notNull(),
+});
+
+export const scheduledRoomsPg = pgTable('scheduled_rooms', {
+  id: pgText('id').primaryKey(),
+  roomId: pgText('room_id').notNull().unique(),
+  cronExpression: pgText('cron_expression').notNull(),
+  timezone: pgText('timezone').notNull().default('UTC'),
+  isActive: pgInteger('is_active').notNull().default(1),
+  lastRun: timestamp('last_run'),
+  nextRun: timestamp('next_run'),
   createdAt: timestamp('created_at').notNull(),
 });
 
@@ -152,10 +183,22 @@ export const messagesPg = pgTable('messages', {
   agentId: pgText('agent_id'),
   role: pgText('role').$type<'agent' | 'human' | 'system'>().notNull(),
   content: pgText('content').notNull(),
+  thoughts: pgText('thoughts').$type<string[]>().$default(() => []),
   createdAt: timestamp('created_at').notNull(),
 }, (table) => ({
   // Index for querying messages in a room
   roomIdIdx: { columns: [table.roomId] },
+}));
+
+export const messageReactionsPg = pgTable('message_reactions', {
+  id: pgText('id').primaryKey(),
+  messageId: pgText('message_id').notNull(),
+  userId: pgText('user_id').notNull(),
+  emoji: pgText('emoji').notNull(),
+  createdAt: timestamp('created_at').notNull(),
+}, (table) => ({
+  // Index for querying reactions by message
+  messageIdIdx: { columns: [table.messageId] },
 }));
 
 export const settingsPg = pgTable('settings', {

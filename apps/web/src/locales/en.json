@@ -1,0 +1,68 @@
+{
+    "app": {
+        "title": "AgentRoom",
+        "description": "Multi-agent conversation platform"
+    },
+    "nav": {
+        "dashboard": "Dashboard",
+        "rooms": "Rooms",
+        "agents": "Agents",
+        "settings": "Settings"
+    },
+    "rooms": {
+        "title": "Rooms",
+        "create": "Create Room",
+        "name": "Room Name",
+        "topic": "Topic",
+        "status": "Status",
+        "actions": "Actions",
+        "delete": "Delete Room",
+        "view": "View Room",
+        "empty": "No rooms yet",
+        "schedule": "Schedule",
+        "scheduleTitle": "Room Schedule"
+    },
+    "agents": {
+        "title": "Agents",
+        "create": "Create Agent",
+        "name": "Agent Name",
+        "systemPrompt": "System Prompt",
+        "model": "Model",
+        "actions": "Actions",
+        "delete": "Delete Agent",
+        "empty": "No agents yet"
+    },
+    "messages": {
+        "send": "Send",
+        "placeholder": "Type your message...",
+        "reactions": "Reactions",
+        "addReaction": "Add reaction",
+        "reasoning": "Show reasoning"
+    },
+    "schedule": {
+        "create": "Create Schedule",
+        "delete": "Delete Schedule",
+        "cronExpression": "Cron Expression",
+        "timezone": "Timezone",
+        "nextRun": "Next Run",
+        "lastRun": "Last Run",
+        "active": "Active",
+        "inactive": "Inactive"
+    },
+    "settings": {
+        "title": "Settings",
+        "language": "Language",
+        "theme": "Theme",
+        "profile": "Profile"
+    },
+    "common": {
+        "loading": "Loading...",
+        "error": "Error",
+        "success": "Success",
+        "cancel": "Cancel",
+        "save": "Save",
+        "delete": "Delete",
+        "edit": "Edit",
+        "close": "Close"
+    }
+}

@@ -36,6 +36,14 @@ export interface Message {
   agentId: string | null;
   role: MessageRole;
   content: string;
+  thoughts?: string[];
+  createdAt: string;
+}
+
+export interface MessageThought {
+  id: string;
+  messageId: string;
+  thoughtText: string;
   createdAt: string;
 }
 
@@ -122,5 +130,30 @@ export interface ExportedMessage {
   role: MessageRole;
   content: string;
   senderName?: string;
+  createdAt: string;
+}
+
+// Message Reactions
+export interface MessageReaction {
+  id: string;
+  messageId: string;
+  userId: string;
+  emoji: string;
+  createdAt: string;
+}
+
+export interface MessageWithReactions extends Message {
+  reactions?: MessageReaction[];
+}
+
+// Scheduled Rooms
+export interface ScheduledRoom {
+  id: string;
+  roomId: string;
+  cronExpression: string;
+  timezone: string;
+  isActive: boolean;
+  lastRun: string | null;
+  nextRun: string | null;
   createdAt: string;
 }

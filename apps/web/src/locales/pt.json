@@ -1,0 +1,68 @@
+{
+    "app": {
+        "title": "AgentRoom",
+        "description": "Plataforma de conversas multi-agentes"
+    },
+    "nav": {
+        "dashboard": "Painel",
+        "rooms": "Salas",
+        "agents": "Agentes",
+        "settings": "Configurações"
+    },
+    "rooms": {
+        "title": "Salas",
+        "create": "Criar Sala",
+        "name": "Nome da Sala",
+        "topic": "Tópico",
+        "status": "Status",
+        "actions": "Ações",
+        "delete": "Excluir Sala",
+        "view": "Ver Sala",
+        "empty": "Nenhuma sala ainda",
+        "schedule": "Agendar",
+        "scheduleTitle": "Agendamento da Sala"
+    },
+    "agents": {
+        "title": "Agentes",
+        "create": "Criar Agente",
+        "name": "Nome do Agente",
+        "systemPrompt": "Prompt do Sistema",
+        "model": "Modelo",
+        "actions": "Ações",
+        "delete": "Excluir Agente",
+        "empty": "Nenhum agente ainda"
+    },
+    "messages": {
+        "send": "Enviar",
+        "placeholder": "Digite sua mensagem...",
+        "reactions": "Reações",
+        "addReaction": "Adicionar reação",
+        "reasoning": "Mostrar raciocínio"
+    },
+    "schedule": {
+        "create": "Criar Agendamento",
+        "delete": "Excluir Agendamento",
+        "cronExpression": "Expressão Cron",
+        "timezone": "Fuso Horário",
+        "nextRun": "Próxima Execução",
+        "lastRun": "Última Execução",
+        "active": "Ativo",
+        "inactive": "Inativo"
+    },
+    "settings": {
+        "title": "Configurações",
+        "language": "Idioma",
+        "theme": "Tema",
+        "profile": "Perfil"
+    },
+    "common": {
+        "loading": "Carregando...",
+        "error": "Erro",
+        "success": "Sucesso",
+        "cancel": "Cancelar",
+        "save": "Salvar",
+        "delete": "Excluir",
+        "edit": "Editar",
+        "close": "Fechar"
+    }
+}

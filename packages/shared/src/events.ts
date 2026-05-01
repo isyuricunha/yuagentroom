@@ -1,4 +1,4 @@
-import type { Agent, Message, RoomStatus } from './types.js';
+import type { Agent, Message, RoomStatus, MessageReaction } from './types.js';
 
 // ─── Server → Client Events ────────────────────────────────────────────────
 
@@ -32,13 +32,25 @@ export interface ServerRoomError {
   payload: { roomId: string; error: string; agentId?: string };
 }
 
+export interface ServerRoomReactionAdded {
+  type: 'room:reaction_added';
+  payload: { roomId: string; messageId: string; reaction: MessageReaction };
+}
+
+export interface ServerRoomReactionRemoved {
+  type: 'room:reaction_removed';
+  payload: { roomId: string; messageId: string; reactionId: string };
+}
+
 export type ServerEvent =
   | ServerRoomMessage
   | ServerRoomAgentJoined
   | ServerRoomAgentLeft
   | ServerRoomStatus
   | ServerRoomTyping
-  | ServerRoomError;
+  | ServerRoomError
+  | ServerRoomReactionAdded
+  | ServerRoomReactionRemoved;
 
 // ─── Client → Server Events ────────────────────────────────────────────────
 

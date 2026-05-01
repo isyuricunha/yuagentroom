@@ -420,14 +420,197 @@ const roomsPlugin: FastifyPluginAsync = async (fastify) => {
   fastify.delete<{ Params: { id: string } }>('/rooms/:id', async (req, reply) => {
     const { id } = req.params;
     const client = await getDb();
-
+  
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (client.db as any)
       .delete(client.schema.rooms)
       .where(eq(client.schema.rooms.id, id));
-
+  
     return reply.status(204).send();
   });
-};
+  
+  // ─── Message Reactions ──────────────────────────────────────────────────────
+  
+  // GET /rooms/:roomId/messages/:messageId/reactions — Get all reactions for a message
+  fastify.get<{ Params: { roomId: string; messageId: string } }>('/rooms/:roomId/messages/:messageId/reactions', async (req, reply) => {
+    const { messageId } = req.params;
+    const client = await getDb();
+  
+    // Verify message exists
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const messageRows: unknown[] = await (client.db as any)
+      .select()
+      .from(client.schema.messages)
+      .where(eq(client.schema.messages.id, messageId));
+  
+    if (messageRows.length === 0) {
+      return reply.status(404).send({ error: 'Message not found' });
+    }
+  
+    // Get all reactions for the message
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const reactions: unknown[] = await (client.db as any)
+      .select()
+      .from(client.schema.messageReactions)
+      .where(eq(client.schema.messageReactions.messageId, messageId))
+      .orderBy(desc(client.schema.messageReactions.createdAt));
+  
+    return reply.send(reactions);
+  });
+  
+  // POST /rooms/:roomId/messages/:messageId/reactions — Add a reaction
+  fastify.post<{
+    Params: { roomId: string; messageId: string };
+    Body: { emoji: string; userId: string };
+  }>('/rooms/:roomId/messages/:messageId/reactions', async (req, reply) => {
+    const { messageId } = req.params;
+    const { emoji, userId } = req.body;
+    const client = await getDb();
+  
+    // Verify message exists
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const messageRows: unknown[] = await (client.db as any)
+      .select()
+      .from(client.schema.messages)
+      .where(eq(client.schema.messages.id, messageId));
+  
+    if (messageRows.length === 0) {
+      return reply.status(404).send({ error: 'Message not found' });
+    }
+  
+    const id = randomUUID();
+    const now = new Date();
+  
+    const row = {
+      id,
+      messageId,
+      userId,
+      emoji,
+      createdAt: client.dialect === 'sqlite' ? now.toISOString() : now,
+    };
+  
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (client.db as any).insert(client.schema.messageReactions).values(row);
+  
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows: unknown[] = await (client.db as any)
+      .select()
+      .from(client.schema.messageReactions)
+      .where(eq(client.schema.messageReactions.id, id));
+  
+    return reply.status(201).send(rows[0]);
+  });
+  
+  // DELETE /rooms/:roomId/messages/:messageId/reactions/:reactionId — Remove a reaction
+  fastify.delete<{ Params: { roomId: string; messageId: string; reactionId: string } }>(
+    '/rooms/:roomId/messages/:messageId/reactions/:reactionId',
+    async (req, reply) => {
+      const { messageId, reactionId } = req.params;
+      const client = await getDb();
+  
+      // Verify reaction exists and belongs to the message
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const reactionRows: unknown[] = await (client.db as any)
+        .select()
+        .from(client.schema.messageReactions)
+        .where(
+          and(
+            eq(client.schema.messageReactions.id, reactionId),
+            eq(client.schema.messageReactions.messageId, messageId),
+          ),
+        );
+  
+      if (reactionRows.length === 0) {
+        return reply.status(404).send({ error: 'Reaction not found' });
+      }
+  
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (client.db as any)
+        .delete(client.schema.messageReactions)
+        .where(eq(client.schema.messageReactions.id, reactionId));
+  
+      return reply.status(204).send();
+      },
+    );
+    
+    // ─── Scheduled Rooms ──────────────────────────────────────────────────────
+    
+    // GET /rooms/:roomId/schedule — Get room schedule
+    fastify.get<{ Params: { roomId: string } }>('/rooms/:roomId/schedule', async (req, reply) => {
+      const { roomId } = req.params;
+      const client = await getDb();
+    
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const schedules: unknown[] = await (client.db as any)
+        .select()
+        .from(client.schema.scheduledRooms)
+        .where(eq(client.schema.scheduledRooms.roomId, roomId));
+    
+      if (schedules.length === 0) {
+        return reply.status(404).send({ error: 'Schedule not found' });
+      }
+    
+      return reply.send(schedules[0]);
+    });
+    
+    // POST /rooms/:roomId/schedule — Create/update schedule
+    fastify.post<{
+      Params: { roomId: string };
+      Body: { cronExpression: string; timezone?: string };
+    }>('/rooms/:roomId/schedule', async (req, reply) => {
+      const { roomId } = req.params;
+      const { cronExpression, timezone = 'UTC' } = req.body;
+      const client = await getDb();
+    
+      // Verify room exists
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const roomRows: unknown[] = await (client.db as any)
+        .select()
+        .from(client.schema.rooms)
+        .where(eq(client.schema.rooms.id, roomId));
+    
+      if (roomRows.length === 0) {
+        return reply.status(404).send({ error: 'Room not found' });
+      }
+    
+      const id = randomUUID();
+      const now = new Date();
+    
+      const row = {
+        id,
+        roomId,
+        cronExpression,
+        timezone,
+        isActive: 1,
+        lastRun: null,
+        nextRun: null,
+        createdAt: client.dialect === 'sqlite' ? now.toISOString() : now,
+      };
+    
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (client.db as any).insert(client.schema.scheduledRooms).values(row);
+    
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rows: unknown[] = await (client.db as any)
+        .select()
+        .from(client.schema.scheduledRooms)
+        .where(eq(client.schema.scheduledRooms.id, id));
+    
+      return reply.status(201).send(rows[0]);
+    });
+    
+    // DELETE /rooms/:roomId/schedule — Delete schedule
+    fastify.delete<{ Params: { roomId: string } }>('/rooms/:roomId/schedule', async (req, reply) => {
+      const { roomId } = req.params;
+      const client = await getDb();
+    
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (client.db as any)
+        .delete(client.schema.scheduledRooms)
+        .where(eq(client.schema.scheduledRooms.roomId, roomId));
+    
+      return reply.status(204).send();
+    });
+    };
 
 export default roomsPlugin;

@@ -1,4 +1,4 @@
-import type { Agent, Room, Message, RoomWithAgents, User, AuthResponse, CreateAgentInput, AgentTemplate, RoomTemplate } from '@agentroom/shared';
+import type { Agent, Room, Message, RoomWithAgents, User, AuthResponse, CreateAgentInput, AgentTemplate, RoomTemplate, MessageReaction, ScheduledRoom } from '@agentroom/shared';
 import { AUTH_TOKEN_KEY } from './auth-constants';
 
 const BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api';
@@ -248,4 +248,42 @@ export interface RoomAnalytics {
 
 export async function getRoomAnalytics(roomId: string): Promise<RoomAnalytics> {
   return request<RoomAnalytics>(`/rooms/${roomId}/analytics`);
+}
+
+// ─── Message Reactions ──────────────────────────────────────────────────────
+
+export async function getMessageReactions(roomId: string, messageId: string): Promise<MessageReaction[]> {
+  return request<MessageReaction[]>(`/rooms/${roomId}/messages/${messageId}/reactions`);
+}
+
+export async function addReaction(roomId: string, messageId: string, emoji: string, userId: string): Promise<MessageReaction> {
+  return request<MessageReaction>(`/rooms/${roomId}/messages/${messageId}/reactions`, {
+    method: 'POST',
+    body: JSON.stringify({ emoji, userId }),
+  });
+}
+
+export async function removeReaction(roomId: string, messageId: string, reactionId: string): Promise<void> {
+  return request<void>(`/rooms/${roomId}/messages/${messageId}/reactions/${reactionId}`, {
+    method: 'DELETE',
+  });
+}
+
+// ─── Scheduled Rooms ──────────────────────────────────────────────────────
+
+export async function getRoomSchedule(roomId: string): Promise<ScheduledRoom> {
+  return request<ScheduledRoom>(`/rooms/${roomId}/schedule`);
+}
+
+export async function setRoomSchedule(roomId: string, cronExpression: string, timezone: string): Promise<ScheduledRoom> {
+  return request<ScheduledRoom>(`/rooms/${roomId}/schedule`, {
+    method: 'POST',
+    body: JSON.stringify({ cronExpression, timezone }),
+  });
+}
+
+export async function deleteRoomSchedule(roomId: string): Promise<void> {
+  return request<void>(`/rooms/${roomId}/schedule`, {
+    method: 'DELETE',
+  });
 }

@@ -12,6 +12,8 @@ export type SqliteSchema = {
   users: typeof import('./schema.js').usersSqlite;
   agentTemplates: typeof import('./schema.js').agentTemplatesSqlite;
   roomTemplates: typeof import('./schema.js').roomTemplatesSqlite;
+  messageReactions: typeof import('./schema.js').messageReactionsSqlite;
+  scheduledRooms: typeof import('./schema.js').scheduledRoomsSqlite;
 };
 
 export type PgSchema = {
@@ -23,6 +25,8 @@ export type PgSchema = {
   users: typeof import('./schema.js').usersPg;
   agentTemplates: typeof import('./schema.js').agentTemplatesPg;
   roomTemplates: typeof import('./schema.js').roomTemplatesPg;
+  messageReactions: typeof import('./schema.js').messageReactionsPg;
+  scheduledRooms: typeof import('./schema.js').scheduledRoomsPg;
 };
 
 export type DbClient =
@@ -62,6 +66,8 @@ export async function getDb(): Promise<DbClient> {
       users: schema.usersSqlite,
       agentTemplates: schema.agentTemplatesSqlite,
       roomTemplates: schema.roomTemplatesSqlite,
+      messageReactions: schema.messageReactionsSqlite,
+      scheduledRooms: schema.scheduledRoomsSqlite,
     };
 
     const db = drizzle(sqlite, { schema: sqliteSchema });
@@ -105,7 +111,26 @@ export async function getDb(): Promise<DbClient> {
         content TEXT NOT NULL,
         created_at TEXT NOT NULL
       );
-
+      
+      CREATE TABLE IF NOT EXISTS message_reactions (
+        id TEXT PRIMARY KEY,
+        message_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        emoji TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+      
+      CREATE TABLE IF NOT EXISTS scheduled_rooms (
+        id TEXT PRIMARY KEY,
+        room_id TEXT NOT NULL UNIQUE,
+        cron_expression TEXT NOT NULL,
+        timezone TEXT NOT NULL DEFAULT 'UTC',
+        is_active INTEGER NOT NULL DEFAULT 1,
+        last_run TEXT,
+        next_run TEXT,
+        created_at TEXT NOT NULL
+      );
+      
       CREATE TABLE IF NOT EXISTS settings (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
@@ -159,6 +184,8 @@ export async function getDb(): Promise<DbClient> {
     users: schema.usersPg,
     agentTemplates: schema.agentTemplatesPg,
     roomTemplates: schema.roomTemplatesPg,
+    messageReactions: schema.messageReactionsPg,
+    scheduledRooms: schema.scheduledRoomsPg,
   };
 
   const db = drizzle(pool, { schema: pgSchema });
@@ -202,7 +229,26 @@ export async function getDb(): Promise<DbClient> {
       content TEXT NOT NULL,
       created_at TIMESTAMPTZ NOT NULL
     );
-
+    
+    CREATE TABLE IF NOT EXISTS message_reactions (
+      id TEXT PRIMARY KEY,
+      message_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      emoji TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL
+    );
+    
+    CREATE TABLE IF NOT EXISTS scheduled_rooms (
+      id TEXT PRIMARY KEY,
+      room_id TEXT NOT NULL UNIQUE,
+      cron_expression TEXT NOT NULL,
+      timezone TEXT NOT NULL DEFAULT 'UTC',
+      is_active INTEGER NOT NULL DEFAULT 1,
+      last_run TIMESTAMPTZ,
+      next_run TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL
+    );
+    
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL

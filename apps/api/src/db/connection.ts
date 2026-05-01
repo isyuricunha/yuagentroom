@@ -147,7 +147,29 @@ export async function getDb(): Promise<DbClient> {
     first_login INTEGER NOT NULL DEFAULT 1,
     first_login_at TEXT
   );
-    `);
+
+  CREATE TABLE IF NOT EXISTS agent_templates (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT NOT NULL,
+    system_prompt TEXT NOT NULL,
+    model TEXT NOT NULL,
+    temperature INTEGER NOT NULL DEFAULT 70,
+    max_tokens INTEGER NOT NULL DEFAULT 1024,
+    is_default INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS room_templates (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT NOT NULL,
+    config_json TEXT NOT NULL,
+    agent_configs_json TEXT NOT NULL,
+    is_default INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+  );
+  `);
 
   // Migration: Add reasoning_effort to agents if it doesn't exist
   const tableInfo = sqlite.prepare("PRAGMA table_info(agents)").all() as any[];
@@ -264,6 +286,28 @@ export async function getDb(): Promise<DbClient> {
     last_login_at TIMESTAMPTZ,
     first_login INTEGER NOT NULL DEFAULT 1,
     first_login_at TIMESTAMPTZ
+  );
+
+  CREATE TABLE IF NOT EXISTS agent_templates (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT NOT NULL,
+    system_prompt TEXT NOT NULL,
+    model TEXT NOT NULL,
+    temperature INTEGER NOT NULL DEFAULT 70,
+    max_tokens INTEGER NOT NULL DEFAULT 1024,
+    is_default INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS room_templates (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT NOT NULL,
+    config_json TEXT NOT NULL,
+    agent_configs_json TEXT NOT NULL,
+    is_default INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL
   );
   `);
 

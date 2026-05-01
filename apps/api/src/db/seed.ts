@@ -4,6 +4,7 @@
  */
 
 import { randomUUID } from 'crypto';
+import { eq } from 'drizzle-orm';
 import { getDb } from './index.js';
 
 export interface AgentTemplateSeed {
@@ -130,7 +131,7 @@ export async function seedAgentTemplates(): Promise<void> {
     const existing: unknown[] = await (client.db as any)
       .select()
       .from(client.schema.agentTemplates)
-      .where((client.schema.agentTemplates as any).name.eq(template.name));
+      .where(eq(client.schema.agentTemplates.name, template.name));
     
     if (existing.length === 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -162,7 +163,7 @@ export async function seedRoomTemplates(): Promise<void> {
     const existing: unknown[] = await (client.db as any)
       .select()
       .from(client.schema.roomTemplates)
-      .where((client.schema.roomTemplates as any).name.eq(template.name));
+      .where(eq(client.schema.roomTemplates.name, template.name));
     
     if (existing.length === 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

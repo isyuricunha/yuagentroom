@@ -58,13 +58,13 @@ export function AgentForm({ initialData, onSubmit, onCancel, availableModels: pr
       {error && <div className="error-banner">{error}</div>}
       <div className="field" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
         <label>Name</label>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Alice"
             autoFocus
-            style={{ flex: 1 }}
+            style={{ flex: 1, minWidth: '200px' }}
           />
           <button
             type="button"

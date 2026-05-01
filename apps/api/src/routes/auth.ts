@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { getDb } from '../db/index.js';
 import { eq } from 'drizzle-orm';
 import { readEnv } from '../utils/env.js';
+import { hashPassword, verifyPassword } from '../utils/password.js';
 
 // Rate limiting store for auth attempts
 const loginAttempts = new Map<string, { count: number; firstAttempt: number }>();
@@ -66,15 +67,6 @@ function recordLoginAttempt(identifier: string, success: boolean): void {
   }
 }
 
-async function hashPassword(password: string): Promise<string> {
-  const { default: bcrypt } = await import('bcryptjs');
-  return bcrypt.hash(password, 10);
-}
-
-async function comparePassword(password: string, hash: string): Promise<boolean> {
-  const { default: bcrypt } = await import('bcryptjs');
-  return bcrypt.compare(password, hash);
-}
 
 const authPlugin: FastifyPluginAsync = async (fastify) => {
   const env = readEnv();
@@ -116,7 +108,7 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
       user = emailUsers[0];
     }
 
-    if (!user || !(await comparePassword(password, user.passwordHash))) {
+    if (!user || !(await verifyPassword(password, user.passwordHash))) {
       recordLoginAttempt(identifier, false);
       return reply.status(401).send({ error: 'Invalid credentials' });
     }

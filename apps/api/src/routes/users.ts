@@ -1,16 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { getDb } from '../db/index.js';
 import { eq } from 'drizzle-orm';
-
-async function hashPassword(password: string): Promise<string> {
-  const { default: bcrypt } = await import('bcryptjs');
-  return bcrypt.hash(password, 10);
-}
-
-async function comparePassword(password: string, hash: string): Promise<boolean> {
-  const { default: bcrypt } = await import('bcryptjs');
-  return bcrypt.compare(password, hash);
-}
+import { hashPassword, verifyPassword } from '../utils/password.js';
 
 const usersPlugin: FastifyPluginAsync = async (fastify) => {
   // GET /users - list all users (admin only)
@@ -132,8 +123,8 @@ const usersPlugin: FastifyPluginAsync = async (fastify) => {
           return reply.status(400).send({ error: 'Current password and new password required' });
         }
 
-        if (newPassword.length < 6) {
-          return reply.status(400).send({ error: 'New password must be at least 6 characters' });
+        if (newPassword.length < 8) {
+          return reply.status(400).send({ error: 'New password must be at least 8 characters' });
         }
 
         const client = await getDb();
@@ -149,7 +140,7 @@ const usersPlugin: FastifyPluginAsync = async (fastify) => {
         }
 
         // Verify current password
-        const isValid = await comparePassword(currentPassword, user.passwordHash);
+        const isValid = await verifyPassword(currentPassword, user.passwordHash);
         if (!isValid) {
           return reply.status(401).send({ error: 'Current password is incorrect' });
         }

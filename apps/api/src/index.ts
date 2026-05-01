@@ -19,10 +19,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 config({ path: join(__dirname, '../../../.env') });
 
-async function hashPassword(password: string): Promise<string> {
-  const { default: bcrypt } = await import('bcryptjs');
-  return bcrypt.hash(password, 10);
-}
+import { hashPassword } from './utils/password.js';
 
 async function createDefaultAdminUser(dbClient: Awaited<ReturnType<typeof getDb>>): Promise<void> {
   const existingUsers = await (dbClient.db as any)
@@ -51,7 +48,7 @@ async function createDefaultAdminUser(dbClient: Awaited<ReturnType<typeof getDb>
       firstLogin: 1, // Require first login password change
     });
 
-  console.log('Default admin user created (username: admin, password: admin)');
+  console.log('Default admin user created');
 }
 
 async function main(): Promise<void> {

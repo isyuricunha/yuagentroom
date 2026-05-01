@@ -70,12 +70,9 @@ export interface AuthResponse {
 }
 
 export interface CreateAgentInput {
-  name: string;
-  systemPrompt: string;
-  model: string;
-  reasoningEffort?: 'none' | 'low' | 'medium' | 'high';
-  providerUrl?: string;
-  apiKey?: string;
+name: string;
+systemPrompt: string;
+model: string;
 }
 
 export interface CreateRoomInput {

@@ -38,7 +38,7 @@ export function AgentsPage() {
             setAgents(data);
             await loadSettings();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Falha ao carregar agents');
+            setError(err instanceof Error ? err.message : 'Failed to load agents');
         } finally {
             setLoading(false);
         }
@@ -57,7 +57,7 @@ export function AgentsPage() {
                 await loadSettings();
             } catch (err) {
                 if (cancelled) return;
-                setError(err instanceof Error ? err.message : 'Falha ao carregar agents');
+                setError(err instanceof Error ? err.message : 'Failed to load agents');
             } finally {
                 if (!cancelled) {
                     setLoading(false);
@@ -83,7 +83,7 @@ export function AgentsPage() {
     }
 
     function handleOpenClone(agent: Agent) {
-        setEditingAgent({ ...agent, id: '', name: `${agent.name} (Cópia)` });
+        setEditingAgent({ ...agent, id: '', name: `${agent.name} (Copy)` });
         setIsModalOpen(true);
     }
 
@@ -108,7 +108,7 @@ export function AgentsPage() {
             await deleteAgent(id);
             await loadAgents();
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Falha ao deletar agent');
+            alert(err instanceof Error ? err.message : 'Failed to delete agent');
         }
     }
 
@@ -129,7 +129,7 @@ export function AgentsPage() {
         return (
             <div className="agents-loading">
                 <div className="agents-spinner"></div>
-                <p>Carregando agents...</p>
+                <p>Loading agents...</p>
             </div>
         );
     }
@@ -143,11 +143,11 @@ export function AgentsPage() {
                         Agents
                     </h1>
                     <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                        Gerencie os personas disponíveis para suas rooms.
+                        Manage the agent personas available for your rooms.
                     </p>
                 </div>
                 <Button variant="primary" onClick={handleOpenCreate}>
-                    <Plus size={18} /> Novo Agent
+                    <Plus size={18} /> New Agent
                 </Button>
             </div>
 
@@ -165,10 +165,10 @@ export function AgentsPage() {
                     >
                         🤖
                     </div>
-                    <h2>Nenhuma Inteligência Configurada</h2>
-                    <p>O sistema precisa de pelo menos um persona automatizado antes de ativar uma room.</p>
+                    <h2>No Agents Configured</h2>
+                    <p>The system needs at least one automated agent persona before starting a room.</p>
                     <Button variant="primary" onClick={handleOpenCreate}>
-                        Inicializar Agent
+                        Initialize Agent
                     </Button>
                 </div>
             ) : (
@@ -180,20 +180,20 @@ export function AgentsPage() {
                             <input
                                 type="text"
                                 className="search-input"
-                                placeholder="Buscar agents por nome, modelo ou prompt..."
+                                placeholder="Search agents by name, model or prompt..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
                         <div className="sort-wrapper">
-                            <label>Ordenar por:</label>
+                            <label>Sort by:</label>
                             <select
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value as 'name' | 'date')}
                                 className="sort-select"
                             >
-                                <option value="name">Nome (A-Z)</option>
-                                <option value="date">Mais Recente</option>
+                                <option value="name">Name (A-Z)</option>
+                                <option value="date">Most Recent</option>
                             </select>
                         </div>
                     </div>
@@ -201,18 +201,18 @@ export function AgentsPage() {
                     {/* Stats Bar */}
                     <div className="agents-stats">
                         <span className="stat-item">
-                            <strong>{filteredAgents.length}</strong> de <strong>{agents.length}</strong> agents
+                            <strong>{filteredAgents.length}</strong> of <strong>{agents.length}</strong> agents
                         </span>
                         {globalProvider && (
                             <span className="stat-item">
                                 {' '}
-                                Provedor: <strong>{globalProvider}</strong>
+                                Provider: <strong>{globalProvider}</strong>
                             </span>
                         )}
                         {availableModels.length > 0 && (
                             <span className="stat-item">
                                 {' '}
-                                Modelos: <strong>{availableModels.length} disponíveis</strong>
+                                Models: <strong>{availableModels.length} available</strong>
                             </span>
                         )}
                     </div>
@@ -231,9 +231,9 @@ export function AgentsPage() {
                         ) : (
                             <div className="empty-search-state">
                                 <Search size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
-                                <p>Nenhum agent encontrado para "{searchTerm}"</p>
+                                <p>No agents found for "{searchTerm}"</p>
                                 <Button variant="ghost" onClick={() => setSearchTerm('')} style={{ marginTop: '0.5rem' }}>
-                                    Limpar busca
+                                    Clear search
                                 </Button>
                             </div>
                         )}
@@ -242,7 +242,7 @@ export function AgentsPage() {
             )}
 
             {isModalOpen && (
-                <Modal title={editingAgent?.id ? 'Editar Agent' : 'Criar Agent'} onClose={handleCloseModal}>
+                <Modal title={editingAgent?.id ? 'Edit Agent' : 'Create Agent'} onClose={handleCloseModal}>
                     <AgentForm
                         initialData={editingAgent}
                         onSubmit={handleSubmit}

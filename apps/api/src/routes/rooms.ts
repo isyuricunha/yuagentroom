@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { randomUUID } from 'crypto';
-import { eq, and, isNull, desc } from 'drizzle-orm';
+import { eq, and, isNull, desc, inArray } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 
 const roomsPlugin: FastifyPluginAsync = async (fastify) => {
@@ -15,7 +15,20 @@ const roomsPlugin: FastifyPluginAsync = async (fastify) => {
     return reply.send(rooms);
   });
 
-  // POST /rooms — create room
+  // POST /rooms — create room with schema validation
+  const createRoomSchema = {
+    body: {
+      type: 'object',
+      required: ['name'],
+      properties: {
+        name: { type: 'string', minLength: 1, maxLength: 255 },
+        topic: { type: 'string', maxLength: 1000 },
+        turnDelayMs: { type: 'number', minimum: 0, maximum: 60000 },
+        maxContextMessages: { type: 'number', minimum: 1, maximum: 500 },
+      },
+    },
+  };
+
   fastify.post<{
     Body: {
       name: string;
@@ -23,12 +36,8 @@ const roomsPlugin: FastifyPluginAsync = async (fastify) => {
       turnDelayMs?: number;
       maxContextMessages?: number;
     };
-  }>('/rooms', async (req, reply) => {
+  }>('/rooms', { schema: createRoomSchema }, async (req, reply) => {
     const { name, topic, turnDelayMs = 2000, maxContextMessages = 50 } = req.body;
-
-    if (!name) {
-      return reply.status(400).send({ error: 'Missing required field: name' });
-    }
 
     const client = await getDb();
     const id = randomUUID();
@@ -84,23 +93,17 @@ const roomsPlugin: FastifyPluginAsync = async (fastify) => {
       );
 
     const agentIds = roomAgentRows.map((r) => r.agentId);
-
+  
     let agents: unknown[] = [];
     if (agentIds.length > 0) {
-      // Fetch agents one by one (Drizzle inList requires at least 1 item)
-      const fetched = await Promise.all(
-        agentIds.map(async (agentId) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const rows: unknown[] = await (client.db as any)
-            .select()
-            .from(client.schema.agents)
-            .where(eq(client.schema.agents.id, agentId));
-          return rows[0];
-        }),
-      );
-      agents = fetched.filter(Boolean);
+      // Fetch all agents in a single query using inList
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      agents = await (client.db as any)
+        .select()
+        .from(client.schema.agents)
+        .where(inArray(client.schema.agents.id, agentIds));
     }
-
+  
     return reply.send({ ...(rooms[0] as object), agents });
   });
 

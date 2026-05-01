@@ -11,6 +11,7 @@ export function RoomsPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
@@ -41,11 +42,14 @@ export function RoomsPage() {
   }
 
   async function handleDeleteRoom(id: string) {
+    setDeletingId(id);
     try {
       await deleteRoom(id);
       await loadRooms();
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to delete room');
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -77,7 +81,7 @@ export function RoomsPage() {
       ) : (
         <div className="card-grid">
           {rooms.map((room) => (
-            <RoomCard key={room.id} room={room} onDelete={handleDeleteRoom} />
+            <RoomCard key={room.id} room={room} onDelete={handleDeleteRoom} isDeleting={deletingId === room.id} />
           ))}
         </div>
       )}

@@ -77,3 +77,10 @@ export interface CreateAgentInput {
   providerUrl?: string;
   apiKey?: string;
 }
+
+export interface CreateRoomInput {
+  name: string;
+  topic?: string;
+  turnDelayMs?: number;
+  maxContextMessages?: number;
+}

@@ -95,7 +95,12 @@ export const roomAgentsPg = pgTable('room_agents', {
   agentId: pgText('agent_id').notNull(),
   joinedAt: timestamp('joined_at').notNull(),
   leftAt: timestamp('left_at'),
-});
+}, (table) => ({
+  // Index for querying agents in a room
+  roomIdIdx: { columns: [table.roomId] },
+  // Unique constraint to prevent duplicate agent entries in same room
+  roomAgentUnique: { columns: [table.roomId, table.agentId], isUnique: true },
+}));
 
 export const messagesPg = pgTable('messages', {
   id: pgText('id').primaryKey(),
@@ -104,7 +109,10 @@ export const messagesPg = pgTable('messages', {
   role: pgText('role').$type<'agent' | 'human' | 'system'>().notNull(),
   content: pgText('content').notNull(),
   createdAt: timestamp('created_at').notNull(),
-});
+}, (table) => ({
+  // Index for querying messages in a room
+  roomIdIdx: { columns: [table.roomId] },
+}));
 
 export const settingsPg = pgTable('settings', {
   key: pgText('key').primaryKey(),

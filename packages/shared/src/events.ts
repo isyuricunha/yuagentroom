@@ -27,12 +27,18 @@ export interface ServerRoomTyping {
   payload: { agentId: string; agentName: string; roomId: string };
 }
 
+export interface ServerRoomError {
+  type: 'room:error';
+  payload: { roomId: string; error: string; agentId?: string };
+}
+
 export type ServerEvent =
   | ServerRoomMessage
   | ServerRoomAgentJoined
   | ServerRoomAgentLeft
   | ServerRoomStatus
-  | ServerRoomTyping;
+  | ServerRoomTyping
+  | ServerRoomError;
 
 // ─── Client → Server Events ────────────────────────────────────────────────
 

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router';
 import type { Agent, Message, RoomWithAgents, ServerEvent, CreateAgentInput } from '@agentroom/shared';
 import { getRoom, getRoomMessages, listAgents } from '../lib/api.ts';
@@ -13,24 +13,24 @@ import { ChevronLeft, Play, Pause, UserPlus, Users, Trash2, Send, Edit2, X } fro
 
 export function RoomPage() {
   const { id } = useParams<{ id: string }>();
-  
+
   const [room, setRoom] = useState<RoomWithAgents | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [allAgents, setAllAgents] = useState<Agent[]>([]); // For the side panel to add agents
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [typingAgentId, setTypingAgentId] = useState<string | null>(null);
   const [typingAgentName, setTypingAgentName] = useState<string | null>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  
+
   const [ws, setWs] = useState<RoomWebSocket | null>(null);
   const [myInput, setMyInput] = useState('');
-  
+
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
   const [isAgentModalOpen, setIsAgentModalOpen] = useState(false);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll Down
@@ -41,7 +41,7 @@ export function RoomPage() {
   // Data Loading
   useEffect(() => {
     if (!id) return;
-    
+
     let active = true;
 
     async function loadData() {
@@ -53,7 +53,7 @@ export function RoomPage() {
           listAgents(),
         ]);
         if (!active) return;
-        
+
         setRoom(roomData);
         setMessages(msgs);
         setAllAgents(agentsData);
@@ -63,7 +63,7 @@ export function RoomPage() {
         if (active) setLoading(false);
       }
     }
-    
+
     void loadData();
 
     return () => {
@@ -91,7 +91,7 @@ export function RoomPage() {
       const { payload } = ev as Extract<ServerEvent, { type: 'room:typing' }>;
       setTypingAgentId(payload.agentId);
       setTypingAgentName(payload.agentName);
-      
+
       // Auto clear typing indicator if no message arrives in 30s
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
       typingTimerRef.current = setTimeout(() => {
@@ -109,7 +109,7 @@ export function RoomPage() {
       const { payload } = ev as Extract<ServerEvent, { type: 'room:agent_joined' }>;
       // Refetch room data to get full agent list/context cleanly
       getRoom(id).then(setRoom).catch(console.error);
-      
+
       const sysMsg: Message = {
         id: crypto.randomUUID(),
         roomId: id,
@@ -123,26 +123,29 @@ export function RoomPage() {
 
     const unsubAgentLeft = socket.on('room:agent_left', (ev) => {
       const { payload } = ev as Extract<ServerEvent, { type: 'room:agent_left' }>;
-      
+
+      // First get the agent name before updating state
+      let agentName = 'Unknown';
       setRoom((prev) => {
         if (!prev) return null;
         const leftAgent = prev.agents.find(a => a.id === payload.agentId);
-        
-        const sysMsg: Message = {
-          id: crypto.randomUUID(),
-          roomId: id,
-          agentId: null,
-          role: 'system',
-          content: `Agent ${leftAgent?.name || 'Unknown'} left the room`,
-          createdAt: new Date().toISOString()
-        };
-        setMessages((msgs) => [...msgs, sysMsg]);
-        
+        agentName = leftAgent?.name || 'Unknown';
         return {
           ...prev,
           agents: prev.agents.filter(a => a.id !== payload.agentId)
         };
       });
+
+      // Then add system message with the captured agent name
+      const sysMsg: Message = {
+        id: crypto.randomUUID(),
+        roomId: id,
+        agentId: null,
+        role: 'system',
+        content: `Agent ${agentName} left the room`,
+        createdAt: new Date().toISOString()
+      };
+      setMessages((msgs) => [...msgs, sysMsg]);
     });
 
     return () => {
@@ -157,36 +160,38 @@ export function RoomPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, room?.id]); // Connects once room is loaded
 
+  // Actions - must be defined before early returns (React Hooks rules)
+  const handleStart = useCallback(() => {
+    if (room && ws) {
+      ws.send({ type: 'room:start', payload: { roomId: room.id } });
+    }
+  }, [ws, room]);
 
-  if (loading) return <div style={{ padding: '2rem' }}>Loading Room...</div>;
-  if (error || !room) return <div style={{ padding: '2rem', color: 'var(--danger)' }}>{error || 'Room not found'}</div>;
+  const handlePause = useCallback(() => {
+    if (room && ws) {
+      ws.send({ type: 'room:pause', payload: { roomId: room.id } });
+    }
+  }, [ws, room]);
 
-  // Actions
-  const handleStart = () => ws?.send({ type: 'room:start', payload: { roomId: room.id } });
-  const handlePause = () => ws?.send({ type: 'room:pause', payload: { roomId: room.id } });
-  
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = useCallback((e: React.FormEvent) => {
     e.preventDefault();
-    if (!myInput.trim()) return;
+    if (!myInput.trim() || !room) return;
     ws?.send({ type: 'room:send_message', payload: { roomId: room.id, content: myInput } });
     setMyInput('');
-  };
+  }, [ws, myInput, room]);
 
-  const activeAgentIds = new Set(room.agents.map(a => a.id));
-  const availableAgents = allAgents.filter(a => !activeAgentIds.has(a.id));
-
-  const openEditAgent = (agentId: string) => {
+  const openEditAgent = useCallback((agentId: string) => {
     const agent = allAgents.find(a => a.id === agentId);
     if (agent) {
       setEditingAgent(agent);
       setIsAgentModalOpen(true);
     }
-  };
+  }, [allAgents]);
 
-  const handleUpdateAgent = async (input: Partial<CreateAgentInput>) => {
+  const handleUpdateAgent = useCallback(async (input: Partial<CreateAgentInput>) => {
     if (!editingAgent) return;
     const updated = await updateAgent(editingAgent.id, input);
-    
+
     // Update local state
     setAllAgents(prev => prev.map(a => a.id === updated.id ? updated : a));
     setRoom(prev => {
@@ -196,16 +201,23 @@ export function RoomPage() {
         agents: prev.agents.map(a => a.id === updated.id ? updated : a)
       };
     });
-    
+
     setIsAgentModalOpen(false);
     setEditingAgent(null);
-  };
+  }, [editingAgent]);
+
+  // Early returns after all hooks
+  if (loading) return <div style={{ padding: '2rem' }}>Loading Room...</div>;
+  if (error || !room) return <div style={{ padding: '2rem', color: 'var(--danger)' }}>{error || 'Room not found'}</div>;
+
+  const activeAgentIds = new Set(room.agents.map(a => a.id));
+  const availableAgents = allAgents.filter(a => !activeAgentIds.has(a.id));
 
   return (
     <div className="chat-layout">
       {/* Modifies default max-width for chat view */}
       <style>{`.page-content { padding: 0; max-width: 100%; display: flex; }`}</style>
-      
+
       <div className="chat-main">
         {/* Header */}
         <div className="chat-header">
@@ -225,7 +237,7 @@ export function RoomPage() {
               )}
             </div>
           </div>
-          
+
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             {room.status === 'idle' || room.status === 'paused' ? (
               <Button variant="primary" onClick={handleStart} disabled={room.agents.length === 0} style={{ gap: '0.5rem' }}>
@@ -247,26 +259,26 @@ export function RoomPage() {
               <p>No messages yet. Add an agent and start the conversation.</p>
             </div>
           )}
-          
+
           {messages.map(msg => {
-             // For rendering the name correctly.
-             const agentInfo = msg.role === 'agent' 
-               // Check room.agents first, fallback to allAgents (if agent left the room but their messages remain)
-               ? room.agents.find(a => a.id === msg.agentId) || allAgents.find(a => a.id === msg.agentId)
-               // The Server event might inject an 'agent' prop (though not perfectly typed in base Message interface)
-               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-               : (msg as any).agent;
-               
-             return (
-               <MessageBubble 
-                 key={msg.id} 
-                 message={msg} 
-                 agentName={agentInfo?.name} 
-                 onAgentClick={openEditAgent}
-               />
-             );
+            // For rendering the name correctly.
+            const agentInfo = msg.role === 'agent'
+              // Check room.agents first, fallback to allAgents (if agent left the room but their messages remain)
+              ? room.agents.find(a => a.id === msg.agentId) || allAgents.find(a => a.id === msg.agentId)
+              // The Server event might inject an 'agent' prop (though not perfectly typed in base Message interface)
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              : (msg as any).agent;
+
+            return (
+              <MessageBubble
+                key={msg.id}
+                message={msg}
+                agentName={agentInfo?.name}
+                onAgentClick={openEditAgent}
+              />
+            );
           })}
-          
+
           {typingAgentName && (
             <TypingIndicator agentName={typingAgentName} />
           )}
@@ -276,10 +288,10 @@ export function RoomPage() {
         {/* Input Bar */}
         <div className="chat-input-wrapper">
           <form className="chat-input-bar" onSubmit={handleSend}>
-            <input 
-              type="text" 
-              className="input" 
-              placeholder="Message autonomous agents..." 
+            <input
+              type="text"
+              className="input"
+              placeholder="Message autonomous agents..."
               value={myInput}
               onChange={(e) => setMyInput(e.target.value)}
             />
@@ -302,32 +314,32 @@ export function RoomPage() {
             )}
             {room.agents.map(agent => (
               <div key={agent.id} className="agent-sidebar-item">
-                <div 
-                  className="avatar-mini clickable" 
+                <div
+                  className="avatar-mini clickable"
                   onClick={() => openEditAgent(agent.id)}
                   title="Click to edit agent"
                 >
                   {agent.name.charAt(0)}
                 </div>
-                <span 
-                  className="name clickable" 
+                <span
+                  className="name clickable"
                   onClick={() => openEditAgent(agent.id)}
                   title="Click to edit agent"
                 >
                   {agent.name}
                 </span>
                 <div style={{ display: 'flex', gap: '0.25rem' }}>
-                  <button 
+                  <button
                     className="ghost-btn"
                     title="Edit agent"
                     onClick={() => openEditAgent(agent.id)}
                   >
                     <Edit2 size={12} />
                   </button>
-                  <button 
+                  <button
                     className="remove-btn"
                     title="Expel from room"
-                    onClick={() => ws?.send({ type: 'room:remove_agent', payload: { roomId: room.id, agentId: agent.id }})}
+                    onClick={() => ws?.send({ type: 'room:remove_agent', payload: { roomId: room.id, agentId: agent.id } })}
                   >
                     <Trash2 size={12} />
                   </button>
@@ -347,32 +359,32 @@ export function RoomPage() {
             )}
             {availableAgents.map(agent => (
               <div key={agent.id} className="agent-sidebar-item">
-                <div 
-                  className="avatar-mini secondary clickable" 
+                <div
+                  className="avatar-mini secondary clickable"
                   onClick={() => openEditAgent(agent.id)}
                   title="Click to edit agent"
                 >
                   {agent.name.charAt(0)}
                 </div>
-                <span 
-                  className="name clickable" 
+                <span
+                  className="name clickable"
                   onClick={() => openEditAgent(agent.id)}
                   title="Click to edit agent"
                 >
                   {agent.name}
                 </span>
                 <div style={{ display: 'flex', gap: '0.25rem' }}>
-                  <button 
+                  <button
                     className="ghost-btn"
                     title="Edit agent"
                     onClick={() => openEditAgent(agent.id)}
                   >
                     <Edit2 size={12} />
                   </button>
-                  <button 
+                  <button
                     className="add-btn"
                     title="Assign to room"
-                    onClick={() => ws?.send({ type: 'room:add_agent', payload: { roomId: room.id, agentId: agent.id }})}
+                    onClick={() => ws?.send({ type: 'room:add_agent', payload: { roomId: room.id, agentId: agent.id } })}
                   >
                     <UserPlus size={12} />
                   </button>
@@ -393,8 +405,8 @@ export function RoomPage() {
                 <X size={20} />
               </button>
             </div>
-            <AgentForm 
-              initialData={editingAgent} 
+            <AgentForm
+              initialData={editingAgent}
               onSubmit={handleUpdateAgent}
               onCancel={() => setIsAgentModalOpen(false)}
             />

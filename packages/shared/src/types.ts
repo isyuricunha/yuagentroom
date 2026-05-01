@@ -81,3 +81,46 @@ export interface CreateRoomInput {
   turnDelayMs?: number;
   maxContextMessages?: number;
 }
+
+// Agent Templates
+export interface AgentTemplate {
+  id: string;
+  name: string;
+  description: string;
+  systemPrompt: string;
+  model: string;
+  temperature: number;
+  maxTokens: number;
+  isDefault: boolean;
+  createdAt: string;
+}
+
+// Room Templates
+export interface RoomTemplate {
+  id: string;
+  name: string;
+  description: string;
+  configJson: string;
+  agentConfigsJson: string;
+  isDefault: boolean;
+  createdAt: string;
+}
+
+// Conversation Export
+export type ExportFormat = 'json' | 'md';
+
+export interface ConversationExport {
+  roomId: string;
+  roomName: string;
+  format: ExportFormat;
+  exportedAt: string;
+  messages: ExportedMessage[];
+}
+
+export interface ExportedMessage {
+  id: string;
+  role: MessageRole;
+  content: string;
+  senderName?: string;
+  createdAt: string;
+}

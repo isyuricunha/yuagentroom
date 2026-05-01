@@ -11,6 +11,18 @@ export const MESSAGE_ROLES = ['agent', 'human', 'system'] as const;
 
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 
+export const agentTemplatesSqlite = sqliteTable('agent_templates', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull().unique(),
+  description: text('description').notNull(),
+  systemPrompt: text('system_prompt').notNull(),
+  model: text('model').notNull().default('gpt-4'),
+  temperature: integer('temperature').notNull().default(70),
+  maxTokens: integer('max_tokens').notNull().default(1024),
+  isDefault: integer('is_default').notNull().default(0),
+  createdAt: text('created_at').notNull(),
+});
+
 export const agentsSqlite = sqliteTable('agents', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
@@ -65,9 +77,41 @@ export const usersSqlite = sqliteTable('users', {
   firstLoginAt: text('first_login_at'),
 });
 
+export const roomTemplatesSqlite = sqliteTable('room_templates', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull().unique(),
+  description: text('description').notNull(),
+  configJson: text('config_json').notNull(),
+  agentConfigsJson: text('agent_configs_json').notNull(),
+  isDefault: integer('is_default').notNull().default(0),
+  createdAt: text('created_at').notNull(),
+});
+
 // ─── PostgreSQL schema ─────────────────────────────────────────────────────
 
 import { pgTable, text as pgText, integer as pgInteger, timestamp } from 'drizzle-orm/pg-core';
+
+export const agentTemplatesPg = pgTable('agent_templates', {
+  id: pgText('id').primaryKey(),
+  name: pgText('name').notNull().unique(),
+  description: pgText('description').notNull(),
+  systemPrompt: pgText('system_prompt').notNull(),
+  model: pgText('model').notNull().default('gpt-4'),
+  temperature: pgInteger('temperature').notNull().default(70),
+  maxTokens: pgInteger('max_tokens').notNull().default(1024),
+  isDefault: pgInteger('is_default').notNull().default(0),
+  createdAt: timestamp('created_at').notNull(),
+});
+
+export const roomTemplatesPg = pgTable('room_templates', {
+  id: pgText('id').primaryKey(),
+  name: pgText('name').notNull().unique(),
+  description: pgText('description').notNull(),
+  configJson: pgText('config_json').notNull(),
+  agentConfigsJson: pgText('agent_configs_json').notNull(),
+  isDefault: pgInteger('is_default').notNull().default(0),
+  createdAt: timestamp('created_at').notNull(),
+});
 
 export const agentsPg = pgTable('agents', {
   id: pgText('id').primaryKey(),

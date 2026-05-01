@@ -1,15 +1,16 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router';
 import type { Agent, Message, RoomWithAgents, ServerEvent, CreateAgentInput } from '@agentroom/shared';
-import { getRoom, getRoomMessages, listAgents } from '../lib/api.ts';
+import { getRoom, getRoomMessages, listAgents, exportConversationBlob, getRoomAnalytics, type RoomAnalytics } from '../lib/api.ts';
 import { RoomWebSocket } from '../lib/ws.ts';
 import { MessageBubble } from '../components/MessageBubble.tsx';
 import { TypingIndicator } from '../components/TypingIndicator.tsx';
 import { Button } from '../components/Button.tsx';
 import { StatusBadge } from '../components/StatusBadge.tsx';
 import { AgentForm } from '../components/AgentForm.tsx';
+import { RoomStats } from '../components/RoomStats.tsx';
 import { updateAgent } from '../lib/api.ts';
-import { ChevronLeft, Play, Pause, UserPlus, Users, Trash2, Send, Edit2, X } from 'lucide-react';
+import { ChevronLeft, Play, Pause, UserPlus, Users, Trash2, Send, Edit2, X, Download, BarChart3 } from 'lucide-react';
 
 export function RoomPage() {
   const { id } = useParams<{ id: string }>();
@@ -30,6 +31,15 @@ export function RoomPage() {
 
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
   const [isAgentModalOpen, setIsAgentModalOpen] = useState(false);
+
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState<'json' | 'md'>('json');
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+  const [analytics, setAnalytics] = useState<RoomAnalytics | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -173,6 +183,42 @@ export function RoomPage() {
     }
   }, [ws, room]);
 
+  const handleExport = useCallback(async () => {
+    if (!room) return;
+    setIsExporting(true);
+    setExportError(null);
+    try {
+      const { blob, filename } = await exportConversationBlob(room.id, exportFormat);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      setIsExportModalOpen(false);
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'Failed to export conversation');
+    } finally {
+      setIsExporting(false);
+    }
+  }, [room, exportFormat]);
+
+  const handleLoadAnalytics = useCallback(async () => {
+    if (!room) return;
+    setAnalyticsLoading(true);
+    try {
+      const data = await getRoomAnalytics(room.id);
+      setAnalytics(data);
+      setIsStatsModalOpen(true);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to load analytics');
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }, [room]);
+
   const handleSend = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (!myInput.trim() || !room) return;
@@ -239,6 +285,20 @@ export function RoomPage() {
           </div>
 
           <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <Button
+              variant="secondary"
+              onClick={handleLoadAnalytics}
+              style={{ gap: '0.5rem' }}
+            >
+              <BarChart3 size={14} /> Stats
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setIsExportModalOpen(true)}
+              style={{ gap: '0.5rem' }}
+            >
+              <Download size={14} /> Export
+            </Button>
             {room.status === 'idle' || room.status === 'paused' ? (
               <Button variant="primary" onClick={handleStart} disabled={room.agents.length === 0} style={{ gap: '0.5rem' }}>
                 <Play size={14} fill="currentColor" /> Start Session
@@ -410,6 +470,90 @@ export function RoomPage() {
               onSubmit={handleUpdateAgent}
               onCancel={() => setIsAgentModalOpen(false)}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Export Modal */}
+      {isExportModalOpen && (
+        <div className="modal-backdrop" onClick={() => setIsExportModalOpen(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+            <div className="modal-header">
+              <h2>Export Conversation</h2>
+              <button className="btn-ghost" onClick={() => setIsExportModalOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="modal-body" style={{ padding: '1.5rem' }}>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>
+                  Select Format
+                </label>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name="export-format"
+                      value="json"
+                      checked={exportFormat === 'json'}
+                      onChange={() => setExportFormat('json')}
+                    />
+                    JSON
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name="export-format"
+                      value="md"
+                      checked={exportFormat === 'md'}
+                      onChange={() => setExportFormat('md')}
+                    />
+                    Markdown
+                  </label>
+                </div>
+              </div>
+              {exportError && (
+                <div style={{ color: 'var(--danger)', marginBottom: '1rem' }}>
+                  {exportError}
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                <Button variant="secondary" onClick={() => setIsExportModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleExport}
+                  disabled={isExporting}
+                >
+                  {isExporting ? 'Exporting...' : 'Download'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stats Modal */}
+      {isStatsModalOpen && (
+        <div className="modal-backdrop" onClick={() => setIsStatsModalOpen(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <div className="modal-header">
+              <h2>Conversation Statistics</h2>
+              <button className="btn-ghost" onClick={() => setIsStatsModalOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="modal-body" style={{ padding: '1.5rem' }}>
+              {analyticsLoading ? (
+                <div style={{ padding: '2rem', textAlign: 'center' }}>Loading statistics...</div>
+              ) : analytics ? (
+                <RoomStats
+                  analytics={analytics}
+                  agentNames={room?.agents.reduce((acc, agent) => ({ ...acc, [agent.id]: agent.name }), {})}
+                />
+              ) : null}
+            </div>
           </div>
         </div>
       )}

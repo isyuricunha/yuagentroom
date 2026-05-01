@@ -10,6 +10,8 @@ export type SqliteSchema = {
   messages: typeof import('./schema.js').messagesSqlite;
   settings: typeof import('./schema.js').settingsSqlite;
   users: typeof import('./schema.js').usersSqlite;
+  agentTemplates: typeof import('./schema.js').agentTemplatesSqlite;
+  roomTemplates: typeof import('./schema.js').roomTemplatesSqlite;
 };
 
 export type PgSchema = {
@@ -19,6 +21,8 @@ export type PgSchema = {
   messages: typeof import('./schema.js').messagesPg;
   settings: typeof import('./schema.js').settingsPg;
   users: typeof import('./schema.js').usersPg;
+  agentTemplates: typeof import('./schema.js').agentTemplatesPg;
+  roomTemplates: typeof import('./schema.js').roomTemplatesPg;
 };
 
 export type DbClient =
@@ -56,6 +60,8 @@ export async function getDb(): Promise<DbClient> {
       messages: schema.messagesSqlite,
       settings: schema.settingsSqlite,
       users: schema.usersSqlite,
+      agentTemplates: schema.agentTemplatesSqlite,
+      roomTemplates: schema.roomTemplatesSqlite,
     };
 
     const db = drizzle(sqlite, { schema: sqliteSchema });
@@ -151,6 +157,8 @@ export async function getDb(): Promise<DbClient> {
     messages: schema.messagesPg,
     settings: schema.settingsPg,
     users: schema.usersPg,
+    agentTemplates: schema.agentTemplatesPg,
+    roomTemplates: schema.roomTemplatesPg,
   };
 
   const db = drizzle(pool, { schema: pgSchema });

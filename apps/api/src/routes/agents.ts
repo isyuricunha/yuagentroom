@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { randomUUID } from 'crypto';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 
 async function getGlobalSettings() {
@@ -118,7 +118,85 @@ const agentsPlugin: FastifyPluginAsync = async (fastify) => {
 
     return reply.send(updated[0]);
   });
-
+  
+  // GET /agents/templates — list all available templates
+  fastify.get('/agents/templates', async (_req, reply) => {
+    const client = await getDb();
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const templates: unknown[] = await (client.db as any)
+      .select()
+      .from(client.schema.agentTemplates)
+      .orderBy(desc(client.schema.agentTemplates.isDefault));
+    
+    return reply.send(templates);
+  });
+  
+  // POST /agents/templates/:templateId/use — create agent from template
+  fastify.post<{
+    Params: { templateId: string };
+    Body: {
+      name?: string;
+      model?: string;
+      temperature?: number;
+      maxTokens?: number;
+    };
+  }>('/agents/templates/:templateId/use', async (req, reply) => {
+    const { templateId } = req.params;
+    const { name, model } = req.body;
+    const client = await getDb();
+  
+    // Get template
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const templates: unknown[] = await (client.db as any)
+      .select()
+      .from(client.schema.agentTemplates)
+      .where(eq(client.schema.agentTemplates.id, templateId));
+  
+    if (templates.length === 0) {
+      return reply.status(404).send({ error: 'Template not found' });
+    }
+  
+    const template = templates[0] as {
+      name: string;
+      description: string;
+      systemPrompt: string;
+      model: string;
+      temperature: number;
+      maxTokens: number;
+    };
+  
+    // Get global settings for provider URL and API key
+    const settings = await getGlobalSettings();
+    const globalProviderUrl = settings.global_provider_url || '';
+    const globalApiKey = settings.global_api_key || '';
+  
+    const id = randomUUID();
+    const now = new Date();
+  
+    const row = {
+      id,
+      name: name || template.name,
+      systemPrompt: template.systemPrompt,
+      model: model || template.model,
+      reasoningEffort: 'none' as const,
+      providerUrl: globalProviderUrl,
+      apiKey: globalApiKey,
+      createdAt: client.dialect === 'sqlite' ? now.toISOString() : now,
+    };
+  
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (client.db as any).insert(client.schema.agents).values(row);
+  
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows: unknown[] = await (client.db as any)
+      .select()
+      .from(client.schema.agents)
+      .where(eq(client.schema.agents.id, id));
+  
+    return reply.status(201).send(rows[0]);
+  });
+  
   // DELETE /agents/:id
   fastify.delete<{ Params: { id: string } }>('/agents/:id', async (req, reply) => {
     const { id } = req.params;

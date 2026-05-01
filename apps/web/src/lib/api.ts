@@ -1,4 +1,4 @@
-import type { Agent, Room, Message, RoomWithAgents, User, AuthResponse, CreateAgentInput } from '@agentroom/shared';
+import type { Agent, Room, Message, RoomWithAgents, User, AuthResponse, CreateAgentInput, AgentTemplate, RoomTemplate } from '@agentroom/shared';
 import { AUTH_TOKEN_KEY } from './auth-constants';
 
 const BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api';
@@ -181,4 +181,71 @@ export async function getRoomMessages(id: string, limit = 50): Promise<Message[]
 
 export async function deleteRoom(id: string): Promise<void> {
   return request<void>(`/rooms/${id}`, { method: 'DELETE' });
+}
+
+// Export conversation - returns blob for download
+export async function exportConversationBlob(roomId: string, format: 'json' | 'md' = 'json'): Promise<{ blob: Blob; filename: string }> {
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  const headers: HeadersInit = {
+    ...(token && { Authorization: `Bearer ${token}` }),
+  };
+
+  const res = await fetch(`${BASE}/rooms/${roomId}/export?format=${format}`, {
+    headers,
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? `Request failed: ${res.status}`);
+  }
+
+  const blob = await res.blob();
+  const disposition = res.headers.get('Content-Disposition');
+  const filename = disposition
+    ? disposition.split('filename=')[1]?.replace(/"/g, '') || `conversation.${format}`
+    : `conversation.${format}`;
+
+  return { blob, filename };
+}
+
+// ─── Agent Templates ─────────────────────────────────────────────────────────
+
+export async function getAgentTemplates(): Promise<AgentTemplate[]> {
+  return request<AgentTemplate[]>('/agents/templates');
+}
+
+export async function createAgentFromTemplate(templateId: string, input?: { name?: string; model?: string }): Promise<Agent> {
+  return request<Agent>(`/agents/templates/${templateId}/use`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+// ─── Room Templates ──────────────────────────────────────────────────────────
+
+export async function getRoomTemplates(): Promise<RoomTemplate[]> {
+  return request<RoomTemplate[]>('/rooms/templates');
+}
+
+export async function createRoomFromTemplate(templateId: string): Promise<Room> {
+  return request<Room>(`/rooms/templates/${templateId}/create`, {
+    method: 'POST',
+  });
+}
+
+// ─── Room Analytics ──────────────────────────────────────────────────────────
+
+export interface RoomAnalytics {
+  totalMessages: number;
+  messagesPerAgent: Record<string, number>;
+  humanMessageCount: number;
+  avgResponseTimeMs: number;
+  conversationDurationMs: number;
+  createdAt: string;
+  lastMessageAt: string;
+}
+
+export async function getRoomAnalytics(roomId: string): Promise<RoomAnalytics> {
+  return request<RoomAnalytics>(`/rooms/${roomId}/analytics`);
 }

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import type { Agent, CreateAgentInput } from '@agentroom/shared';
-import { listAgents, createAgent, updateAgent, deleteAgent, api as apiClient } from '../lib/api.ts';
+import type { Agent, CreateAgentInput, AgentTemplate } from '@agentroom/shared';
+import { listAgents, createAgent, updateAgent, deleteAgent, api as apiClient, getAgentTemplates, createAgentFromTemplate } from '../lib/api.ts';
 import { Button } from '../components/Button.tsx';
 import { AgentCard } from '../components/AgentCard.tsx';
 import { AgentForm } from '../components/AgentForm.tsx';
 import { Modal } from '../components/Modal.tsx';
-import { Search, Plus, Cpu } from 'lucide-react';
+import { AgentTemplateCard } from '../components/AgentTemplateCard.tsx';
+import { Search, Plus, Cpu, FileText } from 'lucide-react';
 
 export function AgentsPage() {
     const [agents, setAgents] = useState<Agent[]>([]);
@@ -17,6 +18,9 @@ export function AgentsPage() {
     const [globalProvider, setGlobalProvider] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingAgent, setEditingAgent] = useState<Agent | undefined>(undefined);
+    const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+    const [templates, setTemplates] = useState<AgentTemplate[]>([]);
+    const [templateLoading, setTemplateLoading] = useState(false);
 
     async function loadSettings() {
         try {
@@ -41,6 +45,37 @@ export function AgentsPage() {
             setError(err instanceof Error ? err.message : 'Failed to load agents');
         } finally {
             setLoading(false);
+        }
+    }
+
+    async function loadTemplates() {
+        try {
+            setTemplateLoading(true);
+            const data = await getAgentTemplates();
+            setTemplates(data);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to load templates');
+        } finally {
+            setTemplateLoading(false);
+        }
+    }
+
+    function handleOpenTemplateModal() {
+        void loadTemplates();
+        setIsTemplateModalOpen(true);
+    }
+
+    function handleCloseTemplateModal() {
+        setIsTemplateModalOpen(false);
+    }
+
+    async function handleSelectTemplate(template: AgentTemplate) {
+        try {
+            await createAgentFromTemplate(template.id);
+            await loadAgents();
+            handleCloseTemplateModal();
+        } catch (err) {
+            alert(err instanceof Error ? err.message : 'Failed to create agent from template');
         }
     }
 
@@ -146,9 +181,14 @@ export function AgentsPage() {
                         Manage the agent personas available for your rooms.
                     </p>
                 </div>
-                <Button variant="primary" onClick={handleOpenCreate}>
-                    <Plus size={18} /> New Agent
-                </Button>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <Button variant="secondary" onClick={handleOpenTemplateModal}>
+                        <FileText size={18} /> Create from Template
+                    </Button>
+                    <Button variant="primary" onClick={handleOpenCreate}>
+                        <Plus size={18} /> New Agent
+                    </Button>
+                </div>
             </div>
 
             {error && <div className="error-banner">{error}</div>}
@@ -249,6 +289,26 @@ export function AgentsPage() {
                         onCancel={handleCloseModal}
                         availableModels={availableModels}
                     />
+                </Modal>
+            )}
+
+            {isTemplateModalOpen && (
+                <Modal title="Choose Agent Template" onClose={handleCloseTemplateModal}>
+                    {templateLoading ? (
+                        <div style={{ padding: '2rem', textAlign: 'center' }}>Loading templates...</div>
+                    ) : templates.length === 0 ? (
+                        <div style={{ padding: '2rem', textAlign: 'center' }}>No templates available</div>
+                    ) : (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+                            {templates.map((template) => (
+                                <AgentTemplateCard
+                                    key={template.id}
+                                    template={template}
+                                    onSelect={handleSelectTemplate}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </Modal>
             )}
         </>

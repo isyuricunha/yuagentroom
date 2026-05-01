@@ -1,7 +1,7 @@
 import type { Agent, Room, Message, RoomWithAgents, User, AuthResponse, CreateAgentInput } from '@agentroom/shared';
 import { AUTH_TOKEN_KEY } from './auth-constants';
 
-const BASE = '/api';
+const BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api';
 
 async function request<T>(
   path: string,

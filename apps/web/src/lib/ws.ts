@@ -1,4 +1,5 @@
 import type { ServerEvent, ClientEvent } from '@agentroom/shared';
+import { AUTH_TOKEN_KEY } from './auth-constants';
 
 type EventListener<T extends ServerEvent = ServerEvent> = (event: T) => void;
 
@@ -24,7 +25,7 @@ export class RoomWebSocket {
     const host = window.location.host;
     let url = `${protocol}//${host}/ws/rooms/${this.roomId}`;
 
-    const token = localStorage.getItem('agentroom_token');
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
     if (token) {
       url += `?token=${encodeURIComponent(token)}`;
     }

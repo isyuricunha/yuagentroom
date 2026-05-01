@@ -81,7 +81,7 @@ async function main(): Promise<void> {
 
   // Setup JWT - Uses Authorization: Bearer header by default
   await app.register(fastifyJwt, {
-    secret: process.env.JWT_SECRET || 'super-secret-agentroom-key-998877',
+    secret: readEnv().JWT_SECRET,
     // No cookie config - reads from Authorization header by default
   });
 

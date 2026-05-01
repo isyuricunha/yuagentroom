@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken';
 import type { ClientEvent, ServerEvent } from '@agentroom/shared';
 import { getDb } from '../db/index.js';
 import { getRoomRunner } from '../engine/room-runner.js';
+import { readEnv } from '../utils/env.js';
 
 // ─── Room subscription map: roomId → set of WS clients ────────────────────
 const roomClients = new Map<string, Set<WebSocket>>();
@@ -60,7 +61,7 @@ export function createWsHandler(server: import('http').Server): WebSocketServer 
         return;
       }
       try {
-        jwt.verify(token, process.env.JWT_SECRET || 'super-secret-agentroom-key-998877');
+        jwt.verify(token, readEnv().JWT_SECRET);
       } catch {
         socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
         socket.destroy();

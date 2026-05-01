@@ -1,6 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { MessageSquare, Cpu, Settings, Users, Plus, TrendingUp, Activity, Clock } from 'lucide-react';
+import {
+    MessageSquare,
+    Cpu,
+    Settings,
+    Users,
+    Plus,
+    TrendingUp,
+    Activity,
+    Clock,
+    Zap,
+    ArrowRight,
+    Sparkles,
+    AlertCircle
+} from 'lucide-react';
 import { getCurrentUser, listRooms, listAgents, listUsers } from '../lib/api';
 import type { User } from '@agentroom/shared';
 import type { Room } from '@agentroom/shared';
@@ -11,6 +24,95 @@ interface DashboardStats {
     totalAgents: number;
     totalUsers: number;
     isAdmin: boolean;
+}
+
+interface StatCardProps {
+    icon: React.ReactNode;
+    iconClass: string;
+    value: string | number;
+    label: string;
+    trend?: 'up' | 'down' | 'neutral';
+    trendIcon?: React.ReactNode;
+    delay?: number;
+}
+
+function StatCard({ icon, iconClass, value, label, trend = 'neutral', trendIcon, delay = 0 }: StatCardProps) {
+    return (
+        <div
+            className="stat-card-enhanced animate-in"
+            style={{ animationDelay: `${delay * 0.1}s` }}
+        >
+            <div className={`stat-card-icon ${iconClass}`}>
+                {icon}
+            </div>
+            <div className="stat-card-content">
+                <span className="stat-card-value">{value}</span>
+                <span className="stat-card-label">{label}</span>
+            </div>
+            <div className={`stat-card-trend ${trend}`}>
+                {trendIcon}
+            </div>
+        </div>
+    );
+}
+
+interface ActivityCardProps {
+    title: string;
+    description: string;
+    status?: Room['status'];
+    date: string;
+    meta?: string;
+    onClick?: () => void;
+    delay?: number;
+}
+
+function ActivityCard({ title, description, status, date, meta, onClick, delay = 0 }: ActivityCardProps) {
+    return (
+        <div
+            className="activity-card animate-in"
+            style={{ animationDelay: `${delay * 0.1}s` }}
+            onClick={onClick}
+        >
+            <div className="activity-card-header">
+                <h3 className="activity-card-title">{title}</h3>
+                {status && (
+                    <span className={`status-badge-enhanced ${status}`}>
+                        {status === 'idle' && 'Waiting'}
+                        {status === 'running' && 'Running'}
+                        {status === 'paused' && 'Paused'}
+                    </span>
+                )}
+            </div>
+            <p className="activity-card-description">{description}</p>
+            <div className="activity-card-meta">
+                <div className="activity-card-meta-item">
+                    <Clock size={14} />
+                    <span>{date}</span>
+                </div>
+                {meta && <span>{meta}</span>}
+            </div>
+        </div>
+    );
+}
+
+interface QuickActionProps {
+    icon: React.ReactNode;
+    label: string;
+    onClick: () => void;
+    delay?: number;
+}
+
+function QuickAction({ icon, label, onClick, delay = 0 }: QuickActionProps) {
+    return (
+        <button
+            className="quick-action-btn-enhanced animate-in"
+            style={{ animationDelay: `${delay * 0.1}s` }}
+            onClick={onClick}
+        >
+            <span className="quick-action-icon">{icon}</span>
+            <span>{label}</span>
+        </button>
+    );
 }
 
 export function DashboardPage() {
@@ -76,227 +178,257 @@ export function DashboardPage() {
 
     if (loading) {
         return (
-            <div className="dashboard-loading">
-                <div className="dashboard-spinner"></div>
-                <p>Loading dashboard...</p>
+            <div className="dashboard-container">
+                <div className="dashboard-skeleton">
+                    {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="skeleton-card">
+                            <div className="skeleton-line short" />
+                            <div className="skeleton-line" />
+                            <div className="skeleton-line medium" />
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="dashboard-error">
+            <div className="empty-state-enhanced">
+                <div className="empty-state-icon" style={{ borderColor: 'rgba(239, 68, 68, 0.3)', background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.05))' }}>
+                    <AlertCircle size={40} />
+                </div>
+                <h3>Error Loading Dashboard</h3>
                 <p>{error}</p>
-                <button onClick={() => window.location.reload()} className="btn btn-primary">
+                <button
+                    onClick={() => window.location.reload()}
+                    className="btn btn-primary"
+                >
                     Try Again
                 </button>
             </div>
         );
     }
 
+    const currentDate = new Date().toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+
     return (
         <div className="dashboard-container">
-            <div className="dashboard-header">
-                <div className="dashboard-header-content">
-                    <h1>Welcome Back{user ? `, ${user.username}` : ''}!</h1>
-                    <p className="dashboard-subtitle">AgentRoom environment overview</p>
-                </div>
-                <div className="dashboard-actions">
-                    <button
-                        onClick={() => navigate('/rooms')}
-                        className="btn btn-primary"
-                        disabled={!stats?.isAdmin}
-                    >
-                        <Plus size={18} />
-                        New Room
-                    </button>
-                    <button onClick={() => navigate('/agents')} className="btn btn-secondary">
-                        <Cpu size={18} />
-                        Manage Agents
-                    </button>
+            {/* Hero Section */}
+            <div className="dashboard-hero animate-in">
+                <div className="dashboard-hero-content">
+                    <h1>
+                        <Sparkles size={28} />
+                        Welcome Back{user ? `, ${user.username}` : ''}!
+                    </h1>
+                    <p className="dashboard-hero-subtitle">
+                        {currentDate} • {stats?.isAdmin ? 'Administrator' : 'User'} Environment
+                    </p>
+                    <div className="dashboard-hero-actions">
+                        <button
+                            onClick={() => navigate('/rooms')}
+                            className="btn btn-primary"
+                            disabled={!stats?.isAdmin}
+                        >
+                            <Plus size={18} />
+                            New Room
+                        </button>
+                        <button
+                            onClick={() => navigate('/agents')}
+                            className="btn btn-secondary"
+                        >
+                            <Cpu size={18} />
+                            Manage Agents
+                        </button>
+                    </div>
                 </div>
             </div>
 
+            {/* Admin Notice */}
             {!stats?.isAdmin && (
-                <div className="dashboard-notice">
-                    <p>ℹ️ You need administrator permissions to create new rooms.</p>
+                <div className="dashboard-notice-enhanced animate-in">
+                    <AlertCircle size={18} />
+                    <span>You need administrator permissions to create new rooms.</span>
                 </div>
             )}
 
-            {/* Stats Cards */}
-            <div className="dashboard-stats-grid">
-                <div className="stat-card">
-                    <div className="stat-icon rooms">
-                        <MessageSquare size={24} />
-                    </div>
-                    <div className="stat-content">
-                        <span className="stat-value">{stats?.totalRooms || 0}</span>
-                        <span className="stat-label">Total Rooms</span>
-                    </div>
-                    <div className="stat-trend">
-                        <TrendingUp size={16} />
-                    </div>
-                </div>
-
-                <div className="stat-card">
-                    <div className="stat-icon agents">
-                        <Cpu size={24} />
-                    </div>
-                    <div className="stat-content">
-                        <span className="stat-value">{stats?.totalAgents || 0}</span>
-                        <span className="stat-label">Total Agents</span>
-                    </div>
-                    <div className="stat-trend">
-                        <Activity size={16} />
-                    </div>
-                </div>
-
+            {/* Stats Grid */}
+            <div className="dashboard-stats-grid-enhanced">
+                <StatCard
+                    icon={<MessageSquare size={24} />}
+                    iconClass="rooms"
+                    value={stats?.totalRooms || 0}
+                    label="Total Rooms"
+                    trend="neutral"
+                    trendIcon={<><TrendingUp size={16} /> <span>All time</span></>}
+                    delay={1}
+                />
+                <StatCard
+                    icon={<Cpu size={24} />}
+                    iconClass="agents"
+                    value={stats?.totalAgents || 0}
+                    label="Total Agents"
+                    trend="neutral"
+                    trendIcon={<><Activity size={16} /> <span>Active</span></>}
+                    delay={2}
+                />
                 {stats?.isAdmin && (
-                    <div className="stat-card">
-                        <div className="stat-icon users">
-                            <Users size={24} />
-                        </div>
-                        <div className="stat-content">
-                            <span className="stat-value">{stats?.totalUsers || 0}</span>
-                            <span className="stat-label">Users</span>
-                        </div>
-                        <div className="stat-trend">
-                            <Clock size={16} />
-                        </div>
-                    </div>
+                    <StatCard
+                        icon={<Users size={24} />}
+                        iconClass="users"
+                        value={stats?.totalUsers || 0}
+                        label="Users"
+                        trend="neutral"
+                        trendIcon={<><Clock size={16} /> <span>Current</span></>}
+                        delay={3}
+                    />
                 )}
-
-                <div className="stat-card">
-                    <div className="stat-icon settings">
-                        <Settings size={24} />
-                    </div>
-                    <div className="stat-content">
-                        <span className="stat-value">{stats?.isAdmin ? 'Admin' : 'User'}</span>
-                        <span className="stat-label">Your Role</span>
-                    </div>
-                    <div className="stat-trend">
-                        <TrendingUp size={16} />
-                    </div>
-                </div>
+                <StatCard
+                    icon={<Settings size={24} />}
+                    iconClass="settings"
+                    value={stats?.isAdmin ? 'Admin' : 'User'}
+                    label="Your Role"
+                    trend="neutral"
+                    trendIcon={<><TrendingUp size={16} /> <span>Access level</span></>}
+                    delay={stats?.isAdmin ? 4 : 3}
+                />
             </div>
 
-            {/* Recent Rooms */}
-            <div className="dashboard-section">
-                <div className="section-header">
-                    <h2>
+            {/* Recent Rooms Section */}
+            <div className="dashboard-section-enhanced">
+                <div className="dashboard-section-header">
+                    <h2 className="dashboard-section-title">
                         <MessageSquare size={20} />
                         Recent Rooms
                     </h2>
-                    <button onClick={() => navigate('/rooms')} className="btn btn-ghost btn-sm">
-                        View All →
+                    <button
+                        onClick={() => navigate('/rooms')}
+                        className="btn btn-ghost btn-sm"
+                    >
+                        View All <ArrowRight size={14} style={{ marginLeft: 4 }} />
                     </button>
                 </div>
                 {recentRooms.length > 0 ? (
-                    <div className="dashboard-cards-grid">
-                        {recentRooms.map((room) => (
-                            <div
+                    <div className="activity-cards-grid">
+                        {recentRooms.map((room, index) => (
+                            <ActivityCard
                                 key={room.id}
-                                className="dashboard-card room-card"
+                                title={room.name}
+                                description={room.topic || 'No topic defined'}
+                                status={room.status}
+                                date={new Date(room.createdAt).toLocaleDateString()}
+                                meta={`${room.maxContextMessages} msgs max`}
                                 onClick={() => navigate(`/rooms/${room.id}`)}
-                                style={{ cursor: 'pointer' }}
-                            >
-                                <div className="card-header">
-                                    <h3>{room.name}</h3>
-                                    <span className={`status-badge status-${room.status}`}>
-                                        {room.status === 'idle' && 'Waiting'}
-                                        {room.status === 'running' && 'Running'}
-                                        {room.status === 'paused' && 'Paused'}
-                                    </span>
-                                </div>
-                                <p className="card-description">
-                                    {room.topic || 'No topic defined'}
-                                </p>
-                                <div className="card-meta">
-                                    <span>
-                                        <Clock size={14} />
-                                        {new Date(room.createdAt).toLocaleDateString()}
-                                    </span>
-                                    <span>{room.maxContextMessages} msgs max</span>
-                                </div>
-                            </div>
+                                delay={index + 1}
+                            />
                         ))}
                     </div>
                 ) : (
-                    <div className="empty-state-mini">
-                        <p>No rooms created yet.</p>
-                        <button onClick={() => navigate('/rooms')} className="btn btn-primary btn-sm">
+                    <div className="empty-state-enhanced">
+                        <div className="empty-state-icon">
+                            <MessageSquare size={32} />
+                        </div>
+                        <h3>No rooms created yet</h3>
+                        <p>Start by creating your first environment for agent collaboration.</p>
+                        <button
+                            onClick={() => navigate('/rooms')}
+                            className="btn btn-primary"
+                            disabled={!stats?.isAdmin}
+                        >
                             Create First Room
                         </button>
                     </div>
                 )}
             </div>
 
-            {/* Recent Agents */}
-            <div className="dashboard-section">
-                <div className="section-header">
-                    <h2>
+            {/* Recent Agents Section */}
+            <div className="dashboard-section-enhanced">
+                <div className="dashboard-section-header">
+                    <h2 className="dashboard-section-title">
                         <Cpu size={20} />
                         Recent Agents
                     </h2>
-                    <button onClick={() => navigate('/agents')} className="btn btn-ghost btn-sm">
-                        View All →
+                    <button
+                        onClick={() => navigate('/agents')}
+                        className="btn btn-ghost btn-sm"
+                    >
+                        View All <ArrowRight size={14} style={{ marginLeft: 4 }} />
                     </button>
                 </div>
                 {recentAgents.length > 0 ? (
-                    <div className="dashboard-cards-grid">
-                        {recentAgents.map((agent) => (
-                            <div key={agent.id} className="dashboard-card agent-card">
-                                <div className="card-header">
-                                    <h3>{agent.name}</h3>
-                                    <span className="model-badge">{agent.model}</span>
-                                </div>
-                                <p className="card-description">
-                                    {agent.systemPrompt
+                    <div className="activity-cards-grid">
+                        {recentAgents.map((agent, index) => (
+                            <ActivityCard
+                                key={agent.id}
+                                title={agent.name}
+                                description={
+                                    agent.systemPrompt
                                         ? agent.systemPrompt.substring(0, 100) + '...'
-                                        : 'No description'}
-                                </p>
-                                <div className="card-meta">
-                                    <span>
-                                        <Clock size={14} />
-                                        {new Date(agent.createdAt).toLocaleDateString()}
-                                    </span>
-                                </div>
-                            </div>
+                                        : 'No description'
+                                }
+                                date={new Date(agent.createdAt).toLocaleDateString()}
+                                meta={agent.model}
+                                onClick={() => navigate('/agents')}
+                                delay={index + 1}
+                            />
                         ))}
                     </div>
                 ) : (
-                    <div className="empty-state-mini">
-                        <p>No agents created yet.</p>
-                        <button onClick={() => navigate('/agents')} className="btn btn-primary btn-sm">
+                    <div className="empty-state-enhanced">
+                        <div className="empty-state-icon">
+                            <Cpu size={32} />
+                        </div>
+                        <h3>No agents configured</h3>
+                        <p>Create your first agent persona to use in rooms.</p>
+                        <button
+                            onClick={() => navigate('/agents')}
+                            className="btn btn-primary"
+                        >
                             Create First Agent
                         </button>
                     </div>
                 )}
             </div>
 
-            {/* Quick Actions */}
-            <div className="dashboard-section">
-                <div className="section-header">
-                    <h2>⚡ Quick Actions</h2>
+            {/* Quick Actions Section */}
+            <div className="dashboard-section-enhanced">
+                <div className="dashboard-section-header">
+                    <h2 className="dashboard-section-title">
+                        <Zap size={20} />
+                        Quick Actions
+                    </h2>
                 </div>
-                <div className="quick-actions-grid">
-                    <button onClick={() => navigate('/rooms')} className="quick-action-btn">
-                        <MessageSquare size={20} />
-                        <span>Go to Rooms</span>
-                    </button>
-                    <button onClick={() => navigate('/agents')} className="quick-action-btn">
-                        <Cpu size={20} />
-                        <span>Manage Agents</span>
-                    </button>
-                    <button onClick={() => navigate('/settings')} className="quick-action-btn">
-                        <Settings size={20} />
-                        <span>Settings</span>
-                    </button>
+                <div className="quick-actions-grid-enhanced">
+                    <QuickAction
+                        icon={<MessageSquare size={24} />}
+                        label="Go to Rooms"
+                        onClick={() => navigate('/rooms')}
+                        delay={1}
+                    />
+                    <QuickAction
+                        icon={<Cpu size={24} />}
+                        label="Manage Agents"
+                        onClick={() => navigate('/agents')}
+                        delay={2}
+                    />
+                    <QuickAction
+                        icon={<Settings size={24} />}
+                        label="Settings"
+                        onClick={() => navigate('/settings')}
+                        delay={3}
+                    />
                     {stats?.isAdmin && (
-                        <button onClick={() => navigate('/admin/users')} className="quick-action-btn">
-                            <Users size={20} />
-                            <span>Manage Users</span>
-                        </button>
+                        <QuickAction
+                            icon={<Users size={24} />}
+                            label="Manage Users"
+                            onClick={() => navigate('/admin/users')}
+                            delay={4}
+                        />
                     )}
                 </div>
             </div>

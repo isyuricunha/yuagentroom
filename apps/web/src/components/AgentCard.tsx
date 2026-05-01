@@ -26,9 +26,10 @@ export function AgentCard({ agent, onEdit, onClone, onDelete }: AgentCardProps) 
                     <div
                         className="message-avatar"
                         style={{
-                            width: 40,
-                            height: 40,
-                            fontSize: '1rem',
+                            width: 48,
+                            height: 48,
+                            fontSize: '1.25rem',
+                            fontWeight: 600,
                             background: `linear-gradient(135deg, hsl(${agent.name.length * 20} % 360, 60%, 40%), hsl(${agent.name.length * 40} % 360, 70%, 50%))`,
                         }}
                     >

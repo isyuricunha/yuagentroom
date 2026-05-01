@@ -64,7 +64,7 @@ export function AgentForm({ initialData, onSubmit, onCancel, availableModels: pr
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Alice"
             autoFocus
-            style={{ flex: 1, minWidth: '200px' }}
+            style={{ flex: 1, minWidth: '300px', height: '2.75rem' }}
           />
           <button
             type="button"

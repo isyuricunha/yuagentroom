@@ -56,15 +56,15 @@ export function AgentForm({ initialData, onSubmit, onCancel, availableModels: pr
   return (
     <form onSubmit={handleSubmit} className="form-row">
       {error && <div className="error-banner">{error}</div>}
-      <div className="field" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+      <div className="field">
         <label>Name</label>
-        <div style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Alice"
             autoFocus
-            style={{ flex: 1, minWidth: '300px', height: '2.75rem' }}
+            style={{ flex: 1, height: '2.75rem' }}
           />
           <button
             type="button"
@@ -75,13 +75,14 @@ export function AgentForm({ initialData, onSubmit, onCancel, availableModels: pr
               alignItems: 'center',
               justifyContent: 'center',
               width: '2.5rem',
-              height: '2.5rem',
+              height: '2.75rem',
               border: '1px solid var(--border)',
               borderRadius: 'var(--radius)',
               background: 'var(--bg-input)',
               color: 'var(--text-muted)',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
+              flexShrink: 0,
             }}
           >
             <Dice1 size={18} />

@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # Main application - API server + Web UI
+  # Connects to EXTERNAL PostgreSQL and Redis services
+  yuagentroom:
+    image: isyuricunha/yuagentroom:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      # Volume for application data persistence
+      - ./data:/app/data
+    environment:
+      # Server port
+      - PORT=3000
+
+      # ============================================
+      # EXTERNAL DATABASE CONFIGURATION
+      # ============================================
+      # Update DATABASE_URL to point to your external PostgreSQL instance
+      # Format: postgresql://<user>:<password>@<host>:<port>/<database>
+      # Example: postgresql://user:password@host-externo:5432/dbname
+      - DATABASE_URL=postgresql://user:password@host-externo:5432/dbname
+
+      # JWT Secret for session tokens (change in production!)
+      - JWT_SECRET=change_me_in_production
+
+      # User registration
+      - ALLOW_REGISTRATION=false
+
+      # ============================================
+      # EXTERNAL REDIS CONFIGURATION
+      # ============================================
+      # Update REDIS_URL to point to your external Redis instance
+      # Format: redis://<host>:<port>
+      # Example: redis://redis-externo:6379
+      - REDIS_URL=redis://redis-externo:6379
+
+    depends_on: []
+    restart: unless-stopped

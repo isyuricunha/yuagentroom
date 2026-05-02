@@ -45,5 +45,5 @@ apps/api/data/db.sqlite-wal
 /apps/api/data
 /.kilo
 
-# Git hooks (custom path)
-hooks/
+# Git hooks (custom path) - only .git-hooks directory
+.git-hooks/

@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# Pre-commit hook to run lint and lint:fix
+# This hook runs before each commit
+# Compatible with Unix-like systems (Linux, macOS, Git Bash on Windows)
+
+echo "Running pre-commit lint checks..."
+
+# Run lint check using pnpm (from root workspace)
+echo "Running pnpm lint..."
+pnpm lint
+LINT_EXIT_CODE=$?
+
+# If lint failed, try to fix automatically
+if [ $LINT_EXIT_CODE -ne 0 ]; then
+    echo "Lint found issues, attempting to fix..."
+    pnpm lint --fix
+    
+    FIX_EXIT_CODE=$?
+    
+    if [ $FIX_EXIT_CODE -ne 0 ]; then
+        echo "Lint fix failed. Please fix the issues manually before committing."
+        exit 1
+    else
+        echo "Lint issues auto-fixed. Please review the changes and commit again."
+        exit 1
+    fi
+fi
+
+echo "Lint passed!"
+exit 0

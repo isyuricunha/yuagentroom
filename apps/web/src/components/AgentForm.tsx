@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Agent, CreateAgentInput } from '@agentroom/shared';
 import { api } from '../lib/api.ts';
 import { generateRandomAgentName } from '../lib/agent-names.ts';
@@ -14,7 +15,13 @@ interface AgentFormProps {
   availableModels?: string[];
 }
 
-export function AgentForm({ initialData, onSubmit, onCancel, availableModels: propAvailableModels = [] }: AgentFormProps) {
+export function AgentForm({
+  initialData,
+  onSubmit,
+  onCancel,
+  availableModels: propAvailableModels = []
+}: AgentFormProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState(initialData?.name ?? '');
   const [systemPrompt, setSystemPrompt] = useState(initialData?.systemPrompt ?? '');
   const [model, setModel] = useState(initialData?.model || '');
@@ -36,10 +43,10 @@ export function AgentForm({ initialData, onSubmit, onCancel, availableModels: pr
     fetchGlobals();
   }, [propAvailableModels]);
 
-  async function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !systemPrompt || !model) {
-      setError('Name and System Prompt are required.');
+      setError(t('agents.nameRequired'));
       return;
     }
     setError(null);
@@ -47,11 +54,15 @@ export function AgentForm({ initialData, onSubmit, onCancel, availableModels: pr
     try {
       await onSubmit({ name, systemPrompt, model });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : t('common.error'));
     } finally {
       setIsSubmitting(false);
     }
-  }
+  }, [name, systemPrompt, model, onSubmit, t]);
+
+  const handleGenerateName = useCallback(() => {
+    setName(generateRandomAgentName());
+  }, []);
 
   return (
     <form onSubmit={handleSubmit} className="agent-form">
@@ -60,27 +71,29 @@ export function AgentForm({ initialData, onSubmit, onCancel, availableModels: pr
       {/* Section: Agent Identity */}
       <div className="form-section">
         <div className="section-header">
-          <Sparkles size={16} className="section-icon" />
-          <h3 className="section-title">Agent Identity</h3>
+          <Sparkles size={16} className="section-icon" aria-hidden="true" />
+          <h3 className="section-title">{t('agents.agentIdentity')}</h3>
         </div>
 
         <div className="form-row-compact">
           <div className="field">
-            <label htmlFor="agent-name">Name</label>
+            <label htmlFor="agent-name">{t('agents.name')}</label>
             <div className="input-with-button">
               <Input
                 id="agent-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Alice"
+                placeholder={t('agents.name')}
                 autoFocus
                 className="agent-name-input"
+                required
               />
               <button
                 type="button"
-                onClick={() => setName(generateRandomAgentName())}
-                title="Generate Random Name"
+                onClick={handleGenerateName}
+                title={t('agents.generateName')}
                 className="random-name-btn"
+                aria-label={t('agents.generateName')}
               >
                 <Dice1 size={18} />
               </button>
@@ -88,13 +101,13 @@ export function AgentForm({ initialData, onSubmit, onCancel, availableModels: pr
           </div>
 
           <div className="field">
-            <label>Model</label>
+            <label>{t('agents.model')}</label>
             <Select
               allowCustom
               value={model}
               onChange={setModel}
               options={availableModels.map((m) => ({ value: m, label: m }))}
-              placeholder="e.g. gpt-4o"
+              placeholder={t('agents.model')}
             />
           </div>
         </div>
@@ -103,30 +116,39 @@ export function AgentForm({ initialData, onSubmit, onCancel, availableModels: pr
       {/* Section: Behavior Configuration */}
       <div className="form-section">
         <div className="section-header">
-          <Brain size={16} className="section-icon" />
-          <h3 className="section-title">Behavior Configuration</h3>
+          <Brain size={16} className="section-icon" aria-hidden="true" />
+          <h3 className="section-title">{t('agents.behaviorConfig')}</h3>
         </div>
 
         <div className="field">
-          <label htmlFor="system-prompt">System Prompt</label>
+          <label htmlFor="system-prompt">{t('agents.systemPrompt')}</label>
           <Textarea
             id="system-prompt"
             value={systemPrompt}
             onChange={(e) => setSystemPrompt(e.target.value)}
-            placeholder="Você é Alice, uma assistente de IA..."
+            placeholder={t('agents.systemPrompt')}
             rows={6}
             className="system-prompt-textarea"
+            required
           />
         </div>
       </div>
 
       {/* Form Actions */}
       <div className="form-actions">
-        <Button type="button" variant="ghost" onClick={onCancel}>
-          Cancel
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={onCancel}
+        >
+          {t('agents.cancel')}
         </Button>
-        <Button type="submit" variant="primary" disabled={isSubmitting}>
-          {isSubmitting ? 'Saving...' : 'Save Agent'}
+        <Button
+          type="submit"
+          variant="primary"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? t('agents.saving') : t('agents.saveAgent')}
         </Button>
       </div>
     </form>

@@ -16,9 +16,13 @@ export function readEnv(): Env {
   const REDIS_URL = process.env['REDIS_URL'];
   const rawPort = process.env['PORT'];
   const PORT = rawPort ? parseInt(rawPort, 10) : 3000;
-  const JWT_SECRET = process.env['JWT_SECRET'] ?? 'super-secret-agentroom-key-998877';
+  const JWT_SECRET = process.env['JWT_SECRET'];
   const ALLOW_REGISTRATION = process.env['ALLOW_REGISTRATION'] === 'true';
   const ADMIN_PASSWORD = process.env['ADMIN_PASSWORD'];
+
+  if (!JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable is required. Please set it in your .env file.');
+  }
 
   if (isNaN(PORT)) {
     throw new Error(`Invalid PORT environment variable: "${rawPort}"`);

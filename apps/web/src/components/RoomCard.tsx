@@ -35,6 +35,56 @@ export function RoomCard({ room, onDelete, isDeleting = false }: RoomCardProps) 
 
   return (
     <div className="room-card-wrapper" style={{ position: 'relative' }}>
+      {/* Delete button container - positioned absolutely with higher z-index */}
+      <div
+        className="room-card-actions"
+        style={{
+          position: 'absolute',
+          top: '0.75rem',
+          right: '0.75rem',
+          zIndex: 10,
+          display: 'flex',
+          gap: '0.5rem'
+        }}
+      >
+        {isDeleting || showDeleteConfirm ? (
+          <>
+            <Button
+              size="sm"
+              onClick={handleDeleteCancel}
+              disabled={isDeleting}
+              style={{ zIndex: 11 }}
+            >
+              {t('rooms.deleteCancel')}
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              style={{ zIndex: 11 }}
+            >
+              {isDeleting ? t('rooms.status') : t('rooms.deleteConfirm')}
+            </Button>
+          </>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDeleteClick}
+            style={{
+              color: 'var(--danger)',
+              padding: '0.25rem',
+              zIndex: 11,
+              backgroundColor: 'var(--bg-app)'
+            }}
+            aria-label={`${t('rooms.delete')} ${room.name}`}
+          >
+            {t('rooms.delete')}
+          </Button>
+        )}
+      </div>
+
       <Link
         to={`/rooms/${room.id}`}
         className="card room-card-container"
@@ -43,7 +93,8 @@ export function RoomCard({ room, onDelete, isDeleting = false }: RoomCardProps) 
           flexDirection: 'column',
           gap: '1rem',
           textDecoration: 'none',
-          color: 'inherit'
+          color: 'inherit',
+          paddingRight: '4.5rem' // Make space for the delete button
         }}
         role="article"
         aria-label={`Room: ${room.name}`}
@@ -117,34 +168,6 @@ export function RoomCard({ room, onDelete, isDeleting = false }: RoomCardProps) 
           </div>
         </div>
       </Link>
-
-      <div style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', display: 'flex', gap: '0.5rem' }}>
-        {isDeleting || showDeleteConfirm ? (
-          <>
-            <Button size="sm" onClick={handleDeleteCancel} disabled={isDeleting}>
-              {t('rooms.deleteCancel')}
-            </Button>
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={handleDeleteConfirm}
-              disabled={isDeleting}
-            >
-              {isDeleting ? t('rooms.status') : t('rooms.deleteConfirm')}
-            </Button>
-          </>
-        ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleDeleteClick}
-            style={{ color: 'var(--danger)', padding: '0.25rem' }}
-            aria-label={`${t('rooms.delete')} ${room.name}`}
-          >
-            {t('rooms.delete')}
-          </Button>
-        )}
-      </div>
     </div>
   );
 }

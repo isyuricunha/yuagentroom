@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import type { Room } from '@agentroom/shared';
 import { StatusBadge } from './StatusBadge.tsx';
@@ -12,20 +13,62 @@ interface RoomCardProps {
 }
 
 export function RoomCard({ room, onDelete, isDeleting = false }: RoomCardProps) {
+  const { t } = useTranslation();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const handleDeleteClick = useCallback(() => {
+    setShowDeleteConfirm(true);
+  }, []);
+
+  const handleDeleteCancel = useCallback(() => {
+    setShowDeleteConfirm(false);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(() => {
+    onDelete(room.id);
+    setShowDeleteConfirm(false);
+  }, [onDelete, room.id]);
+
+  const formatDate = useCallback((dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  }, []);
 
   return (
     <div className="room-card-wrapper" style={{ position: 'relative' }}>
-      <Link to={`/rooms/${room.id}`} className="card room-card-container" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', textDecoration: 'none', color: 'inherit' }}>
+      <Link
+        to={`/rooms/${room.id}`}
+        className="card room-card-container"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1rem',
+          textDecoration: 'none',
+          color: 'inherit'
+        }}
+        role="article"
+        aria-label={`Room: ${room.name}`}
+      >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-            <div className="message-avatar" style={{ width: 40, height: 40, background: 'rgba(59, 130, 246, 0.1)', color: 'var(--accent)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+            <div
+              className="message-avatar"
+              style={{
+                width: 40,
+                height: 40,
+                background: 'rgba(59, 130, 246, 0.1)',
+                color: 'var(--accent)',
+                border: '1px solid rgba(59, 130, 246, 0.2)'
+              }}
+              aria-hidden="true"
+            >
               <MessageSquare size={20} />
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.05rem', color: 'var(--text-heading)' }}>{room.name}</h3>
+              <h3 style={{ margin: 0, fontSize: '1.05rem', color: 'var(--text-heading)' }}>
+                {room.name}
+              </h3>
               <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                Created {new Date(room.createdAt).toLocaleDateString()}
+                {t('rooms.created')} {formatDate(room.createdAt)}
               </p>
             </div>
           </div>
@@ -42,16 +85,34 @@ export function RoomCard({ room, onDelete, isDeleting = false }: RoomCardProps) 
             marginTop: '0.5rem'
           }}
         >
-          {room.topic || 'No topic provided. Agents will chat freely.'}
+          {room.topic || t('rooms.noTopic')}
         </div>
 
-        <div style={{ marginTop: 'auto', display: 'flex', gap: '1rem', alignItems: 'center', justifyContent: 'space-between', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'var(--mono)' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }} title="Turn Delay">
-              <Clock size={14} /> {room.turnDelayMs}ms
+        <div
+          style={{
+            marginTop: 'auto',
+            display: 'flex',
+            gap: '1rem',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingTop: '1rem',
+            borderTop: '1px solid var(--border)'
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              gap: '1rem',
+              fontSize: '0.75rem',
+              color: 'var(--text-muted)',
+              fontFamily: 'var(--mono)'
+            }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }} title={t('rooms.turnDelay')}>
+              <Clock size={14} aria-hidden="true" /> {room.turnDelayMs}ms
             </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }} title="Context Limit">
-              <Layers size={14} /> {room.maxContextMessages} msgs
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }} title={t('rooms.contextLimit')}>
+              <Layers size={14} aria-hidden="true" /> {room.maxContextMessages} {t('rooms.msgs')}
             </span>
           </div>
         </div>
@@ -60,22 +121,27 @@ export function RoomCard({ room, onDelete, isDeleting = false }: RoomCardProps) 
       <div style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', display: 'flex', gap: '0.5rem' }}>
         {isDeleting || showDeleteConfirm ? (
           <>
-            <Button size="sm" onClick={() => setShowDeleteConfirm(false)} disabled={isDeleting}>
-              Cancel
+            <Button size="sm" onClick={handleDeleteCancel} disabled={isDeleting}>
+              {t('rooms.deleteCancel')}
             </Button>
-            <Button variant="danger" size="sm" onClick={() => onDelete(room.id)} disabled={isDeleting}>
-              {isDeleting ? '...' : 'Confirm'}
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+            >
+              {isDeleting ? t('rooms.status') : t('rooms.deleteConfirm')}
             </Button>
           </>
         ) : (
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setShowDeleteConfirm(true)}
+            onClick={handleDeleteClick}
             style={{ color: 'var(--danger)', padding: '0.25rem' }}
-            aria-label="Delete room"
+            aria-label={`${t('rooms.delete')} ${room.name}`}
           >
-            Delete
+            {t('rooms.delete')}
           </Button>
         )}
       </div>

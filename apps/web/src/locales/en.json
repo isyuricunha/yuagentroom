@@ -55,14 +55,55 @@
         "theme": "Theme",
         "profile": "Profile"
     },
-    "common": {
-        "loading": "Loading...",
-        "error": "Error",
-        "success": "Success",
-        "cancel": "Cancel",
-        "save": "Save",
-        "delete": "Delete",
-        "edit": "Edit",
-        "close": "Close"
-    }
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome Back",
+    "subtitle": "Environment",
+    "administrator": "Administrator",
+    "user": "User",
+    "newRoom": "New Room",
+    "manageAgents": "Manage Agents",
+    "notice": "You need administrator permissions to create new rooms.",
+    "stats": {
+      "totalRooms": "Total Rooms",
+      "totalAgents": "Total Agents",
+      "totalUsers": "Users",
+      "yourRole": "Your Role",
+      "allTime": "All time",
+      "active": "Active",
+      "current": "Current",
+      "accessLevel": "Access level"
+    },
+    "recent": {
+      "rooms": "Recent Rooms",
+      "agents": "Recent Agents",
+      "viewAll": "View All",
+      "noRooms": "No rooms created yet",
+      "noAgents": "No agents configured",
+      "createFirstRoom": "Create First Room",
+      "createFirstAgent": "Create First Agent",
+      "startByCreating": "Start by creating your first environment for agent collaboration.",
+      "createFirstAgentDesc": "Create your first agent persona to use in rooms."
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "goToRooms": "Go to Rooms",
+      "manageAgents": "Manage Agents",
+      "settings": "Settings",
+      "manageUsers": "Manage Users"
+    },
+    "loading": "Loading dashboard...",
+    "errorLoading": "Error Loading Dashboard",
+    "tryAgain": "Try Again"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close"
+  }
 }

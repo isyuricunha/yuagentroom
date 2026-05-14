@@ -55,14 +55,55 @@
         "theme": "Tema",
         "profile": "Perfil"
     },
-    "common": {
-        "loading": "Cargando...",
-        "error": "Error",
-        "success": "Éxito",
-        "cancel": "Cancelar",
-        "save": "Guardar",
-        "delete": "Eliminar",
-        "edit": "Editar",
-        "close": "Cerrar"
-    }
+  "dashboard": {
+    "title": "Panel",
+    "welcome": "Bienvenido de nuevo",
+    "subtitle": "Ambiente",
+    "administrator": "Administrador",
+    "user": "Usuario",
+    "newRoom": "Nueva Sala",
+    "manageAgents": "Gestionar Agentes",
+    "notice": "Necesitas permisos de administrador para crear nuevas salas.",
+    "stats": {
+      "totalRooms": "Total de Salas",
+      "totalAgents": "Total de Agentes",
+      "totalUsers": "Usuarios",
+      "yourRole": "Tu Cargo",
+      "allTime": "Todo el tiempo",
+      "active": "Activo",
+      "current": "Actual",
+      "accessLevel": "Nivel de acceso"
+    },
+    "recent": {
+      "rooms": "Salas Recientes",
+      "agents": "Agentes Recientes",
+      "viewAll": "Ver Todos",
+      "noRooms": "Aún no hay salas creadas",
+      "noAgents": "Aún no hay agentes configurados",
+      "createFirstRoom": "Crear Primera Sala",
+      "createFirstAgent": "Crear Primer Agente",
+      "startByCreating": "Comienza creando tu primer entorno para la colaboración de agentes.",
+      "createFirstAgentDesc": "Crea tu primer agente para usar en las salas."
+    },
+    "quickActions": {
+      "title": "Acciones Rápidas",
+      "goToRooms": "Ir a Salas",
+      "manageAgents": "Gestionar Agentes",
+      "settings": "Configuración",
+      "manageUsers": "Gestionar Usuarios"
+    },
+    "loading": "Cargando panel...",
+    "errorLoading": "Error al Cargar Panel",
+    "tryAgain": "Intentar de nuevo"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Cerrar"
+  }
 }

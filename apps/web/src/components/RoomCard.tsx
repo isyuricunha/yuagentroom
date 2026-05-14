@@ -34,18 +34,20 @@ export function RoomCard({ room, onDelete, isDeleting = false }: RoomCardProps) 
   }, []);
 
   return (
-    <div className="room-card-wrapper" style={{ position: 'relative' }}>
-      {/* Delete button container - positioned absolutely with higher z-index */}
+    <div className="card room-card-container" style={{ position: 'relative' }}>
+      {/* Delete button - positioned absolutely over the card */}
       <div
         className="room-card-actions"
         style={{
           position: 'absolute',
-          top: '0.75rem',
-          right: '0.75rem',
-          zIndex: 10,
+          top: '0.5rem',
+          right: '0.5rem',
+          zIndex: 20,
           display: 'flex',
           gap: '0.5rem'
         }}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
       >
         {isDeleting || showDeleteConfirm ? (
           <>
@@ -53,7 +55,6 @@ export function RoomCard({ room, onDelete, isDeleting = false }: RoomCardProps) 
               size="sm"
               onClick={handleDeleteCancel}
               disabled={isDeleting}
-              style={{ zIndex: 11 }}
             >
               {t('rooms.deleteCancel')}
             </Button>
@@ -62,7 +63,6 @@ export function RoomCard({ room, onDelete, isDeleting = false }: RoomCardProps) 
               size="sm"
               onClick={handleDeleteConfirm}
               disabled={isDeleting}
-              style={{ zIndex: 11 }}
             >
               {isDeleting ? t('rooms.status') : t('rooms.deleteConfirm')}
             </Button>
@@ -74,9 +74,9 @@ export function RoomCard({ room, onDelete, isDeleting = false }: RoomCardProps) 
             onClick={handleDeleteClick}
             style={{
               color: 'var(--danger)',
-              padding: '0.25rem',
-              zIndex: 11,
-              backgroundColor: 'var(--bg-app)'
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border)',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
             }}
             aria-label={`${t('rooms.delete')} ${room.name}`}
           >
@@ -85,16 +85,16 @@ export function RoomCard({ room, onDelete, isDeleting = false }: RoomCardProps) 
         )}
       </div>
 
+      {/* Card content wrapped in Link */}
       <Link
         to={`/rooms/${room.id}`}
-        className="card room-card-container"
         style={{
           display: 'flex',
           flexDirection: 'column',
           gap: '1rem',
           textDecoration: 'none',
           color: 'inherit',
-          paddingRight: '4.5rem' // Make space for the delete button
+          paddingRight: '5rem' // Space for delete button
         }}
         role="article"
         aria-label={`Room: ${room.name}`}

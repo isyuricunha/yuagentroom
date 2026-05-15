@@ -33,7 +33,7 @@ async function createDefaultAdminUser(dbClient: Awaited<ReturnType<typeof getDb>
 
   // Create default admin user with username "admin" and password "admin123"
   const adminPasswordHash = await hashPassword('admin123');
-  const now = new Date().toISOString();
+  const now = new Date();
   const adminId = crypto.randomUUID();
 
   await (dbClient.db as any)
@@ -44,7 +44,7 @@ async function createDefaultAdminUser(dbClient: Awaited<ReturnType<typeof getDb>
       email: 'admin@localhost',
       passwordHash: adminPasswordHash,
       role: 'admin',
-      createdAt: now,
+      createdAt: dbClient.dialect === 'sqlite' ? now.toISOString() : now,
       firstLogin: 1, // Require first login password change
     });
 

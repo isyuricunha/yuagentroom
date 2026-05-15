@@ -113,11 +113,11 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
       return reply.status(401).send({ error: 'Invalid credentials' });
     }
 
-    // Update last login
-    const now = new Date().toISOString();
-    await (client.db as any)
-      .update(client.schema.users)
-      .set({ lastLoginAt: now })
+  // Update last login
+  const now = new Date();
+  await (client.db as any)
+    .update(client.schema.users)
+    .set({ lastLoginAt: client.dialect === 'sqlite' ? now.toISOString() : now })
       .where(eq(client.schema.users.id, user.id));
 
     // Record successful login
@@ -177,19 +177,19 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
       .limit(1);
     const isFirstUser = existingUsers.length === 0;
 
-    const passwordHash = await hashPassword(password);
-    const now = new Date().toISOString();
-    const userId = crypto.randomUUID();
+  const passwordHash = await hashPassword(password);
+  const now = new Date();
+  const userId = crypto.randomUUID();
 
-    const [user] = await (client.db as any)
-      .insert(client.schema.users)
-      .values({
-        id: userId,
-        username,
-        email,
-        passwordHash,
-        role: isFirstUser ? 'admin' : 'user',
-        createdAt: now,
+  const [user] = await (client.db as any)
+    .insert(client.schema.users)
+    .values({
+      id: userId,
+      username,
+      email,
+      passwordHash,
+      role: isFirstUser ? 'admin' : 'user',
+      createdAt: client.dialect === 'sqlite' ? now.toISOString() : now,
         firstLogin: 1, // First login is always required
       })
       .returning();
@@ -305,15 +305,15 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
         return reply.status(400).send({ error: 'This endpoint is only for first login password change' });
       }
 
-      const passwordHash = await hashPassword(newPassword);
-      const now = new Date().toISOString();
+  const passwordHash = await hashPassword(newPassword);
+  const now = new Date();
 
-      await (client.db as any)
-        .update(client.schema.users)
-        .set({
-          passwordHash,
-          firstLogin: 0,
-          firstLoginAt: now,
+  await (client.db as any)
+    .update(client.schema.users)
+    .set({
+      passwordHash,
+      firstLogin: 0,
+      firstLoginAt: client.dialect === 'sqlite' ? now.toISOString() : now,
         })
         .where(eq(client.schema.users.id, payload.userId));
 

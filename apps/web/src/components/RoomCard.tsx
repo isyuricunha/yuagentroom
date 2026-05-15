@@ -33,8 +33,23 @@ export function RoomCard({ room, onDelete, isDeleting = false }: RoomCardProps) 
     return new Date(dateString).toLocaleDateString();
   }, []);
 
+  // Status-based accent color for card top border
+  const statusColors: Record<string, string> = {
+    running: 'rgba(136, 192, 208, 0.4)',
+    idle: 'rgba(76, 86, 90, 0.4)',
+    paused: 'rgba(235, 203, 139, 0.4)',
+  };
+
+  const statusAccent = statusColors[room.status] || 'transparent';
+
   return (
-    <div className="card room-card" style={{ position: 'relative' }}>
+    <div 
+      className={`room-card ${isDeleting ? 'room-card-deleting' : ''}`}
+      style={{ 
+        position: 'relative',
+        borderTop: `2px solid ${statusAccent}`,
+      }}
+    >
       {/* Delete button - absolutely positioned in top-right corner */}
       <div
         className="room-card-delete"
@@ -67,6 +82,12 @@ export function RoomCard({ room, onDelete, isDeleting = false }: RoomCardProps) 
         ) : (
           <button
             onClick={handleDeleteClick}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleDeleteClick();
+              }
+            }}
             style={{
               background: 'none',
               border: 'none',
@@ -102,7 +123,7 @@ export function RoomCard({ room, onDelete, isDeleting = false }: RoomCardProps) 
         aria-label={`Room: ${room.name}`}
       >
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', paddingTop: '2.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', paddingTop: '0.5rem' }}>
           <div
             className="room-card-icon"
             style={{

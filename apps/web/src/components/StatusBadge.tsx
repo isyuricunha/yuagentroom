@@ -11,5 +11,9 @@ const LABELS: Record<RoomStatus, string> = {
 };
 
 export function StatusBadge({ status }: StatusBadgeProps) {
-  return <span className={`badge badge-${status}`}>{LABELS[status]}</span>;
+  return (
+    <span className={`badge badge-${status} ${status === 'running' ? 'status-dot-pulse' : ''}`}>
+      {LABELS[status]}
+    </span>
+  );
 }

@@ -653,13 +653,19 @@ box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 18px rgba(76, 157, 243, 
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: 1rem;
+  animation: modalBackdropIn 0.3s ease-out;
+}
+
+@keyframes modalBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .modal {
@@ -672,8 +678,11 @@ box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 18px rgba(76, 157, 243, 
   max-width: 480px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
-  animation: modal-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.6), 
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 0 60px rgba(76, 157, 243, 0.05);
+  animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Decorative modal highlight */
@@ -687,9 +696,15 @@ box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 18px rgba(76, 157, 243, 
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
 }
 
-@keyframes modal-in {
-  from { opacity: 0; transform: scale(0.95) translateY(10px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+@keyframes modalIn {
+  from { 
+    opacity: 0; 
+    transform: scale(0.95) translateY(20px); 
+  }
+  to   { 
+    opacity: 1; 
+    transform: scale(1) translateY(0); 
+  }
 }
 
 .modal-header {
@@ -727,11 +742,19 @@ border: 1px solid rgba(76, 86, 90, 0.3);
 }
 .badge-idle::before { background: var(--idle); }
 
+@keyframes pulse-glow {
+  0%, 100% { 
+    box-shadow: 0 0 10px rgba(136, 192, 208, 0.1); 
+  }
+  50% { 
+    box-shadow: 0 0 20px rgba(136, 192, 208, 0.3); 
+  }
+}
+
 .badge-running {
-background: rgba(136, 192, 208, 0.15);
-color: var(--running);
 border: 1px solid rgba(136, 192, 208, 0.3);
 box-shadow: 0 0 10px rgba(136, 192, 208, 0.1);
+animation: pulse-glow 2s ease-in-out infinite;
 }
 .badge-error {
 background: rgba(191, 97, 106, 0.15);
@@ -763,6 +786,7 @@ border: 1px solid rgba(235, 203, 139, 0.3);
   background: rgba(245, 158, 11, 0.1);
   color: var(--paused);
   border: 1px solid rgba(245, 158, 11, 0.2);
+  animation: pulse-glow-warning 2s ease-in-out infinite;
 }
 .badge-paused::before { background: var(--paused); }
 
@@ -1271,7 +1295,442 @@ border: 1px solid rgba(235, 203, 139, 0.3);
   max-width: 400px;
 }
 
-/* ─── Markdown Body Styles ───────────────────────────────────────────────── */
+/* ─── Rooms Page Specific Styles ─────────────────────────────────────────── */
+.rooms-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.rooms-header h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--text-heading);
+  margin: 0;
+}
+
+.rooms-header-subtitle {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.rooms-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+/* ─── Staggered Card Entrance Animations ────────────────────────────────── */
+@keyframes cardFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.room-card-enter {
+  animation: cardFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-fill-mode: both;
+}
+
+.room-card-enter:nth-child(1) { animation-delay: 0.05s; }
+.room-card-enter:nth-child(2) { animation-delay: 0.1s; }
+.room-card-enter:nth-child(3) { animation-delay: 0.15s; }
+.room-card-enter:nth-child(4) { animation-delay: 0.2s; }
+.room-card-enter:nth-child(5) { animation-delay: 0.25s; }
+.room-card-enter:nth-child(6) { animation-delay: 0.3s; }
+.room-card-enter:nth-child(7) { animation-delay: 0.35s; }
+.room-card-enter:nth-child(8) { animation-delay: 0.4s; }
+.room-card-enter:nth-child(9) { animation-delay: 0.45s; }
+.room-card-enter:nth-child(10) { animation-delay: 0.5s; }
+.room-card-enter:nth-child(11) { animation-delay: 0.55s; }
+.room-card-enter:nth-child(12) { animation-delay: 0.6s; }
+
+/* ─── Enhanced Room Card ────────────────────────────────────────────────── */
+.room-card {
+  position: relative;
+  background: linear-gradient(145deg, var(--bg-surface), var(--bg-panel));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.room-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  border-color: rgba(76, 157, 243, 0.3);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(76, 157, 243, 0.1);
+}
+
+.room-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(76, 157, 243, 0.3), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.room-card:hover::before {
+  opacity: 1;
+}
+
+/* Delete animation */
+.room-card-deleting {
+  animation: cardDelete 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  pointer-events: none;
+}
+
+@keyframes cardDelete {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9) translateX(30px);
+  }
+}
+
+/* ─── Status Pulse Animation ────────────────────────────────────────────── */
+@keyframes statusPulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  50% {
+    opacity: 0.6;
+    box-shadow: 0 0 0 6px currentColor;
+  }
+}
+
+.status-dot-pulse {
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+/* ─── Loading Skeleton ────────────────────────────────────────────────── */
+@keyframes skeletonShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-pulse {
+  background: linear-gradient(90deg, var(--bg-surface) 0%, var(--bg-surface-hover) 50%, var(--bg-surface) 100%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-card {
+  background: linear-gradient(145deg, var(--bg-surface), var(--bg-panel));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 200px;
+}
+
+.skeleton-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.skeleton-title {
+  height: 16px;
+  width: 60%;
+  flex: 1;
+}
+
+.skeleton-subtitle {
+  height: 12px;
+  width: 40%;
+  margin-top: 0.25rem;
+}
+
+.skeleton-body {
+  height: 40px;
+  width: 100%;
+}
+
+.skeleton-footer {
+  display: flex;
+  gap: 1rem;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.skeleton-stat {
+  height: 12px;
+  width: 80px;
+}
+
+/* ─── Empty State Enhanced ──────────────────────────────────────────────── */
+.empty-state-enhanced {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 4rem 2rem;
+  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.01) 50%, transparent);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  animation: fadeIn 0.6s ease-out;
+}
+
+.empty-state-enhanced .icon {
+  font-size: 3rem;
+  margin-bottom: 1.25rem;
+  background: var(--bg-surface);
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 2px 5px rgba(255, 255, 255, 0.05);
+  animation: iconFloat 3s ease-in-out infinite;
+}
+
+@keyframes iconFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.empty-state-enhanced h2 {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-heading);
+}
+
+.empty-state-enhanced p {
+  color: var(--text-muted);
+  max-width: 400px;
+  font-size: 0.95rem;
+  margin-bottom: 2rem;
+  line-height: 1.5;
+}
+
+/* ─── Search & Filter ───────────────────────────────────────────────────── */
+.rooms-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.search-input-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+  max-width: 400px;
+}
+
+.search-input-wrapper svg {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.6rem 1rem 0.6rem 2.5rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-heading);
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.search-input::placeholder {
+  color: #555566;
+}
+
+/* No results state */
+.no-results {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.no-results-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.no-results h3 {
+  color: var(--text-heading);
+  font-size: 1.1rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.no-results p {
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.filter-select {
+  padding: 0.6rem 1rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.875rem;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.filter-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+/* ─── Room Stats Summary ────────────────────────────────────────────────── */
+.rooms-stats-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stats-summary-card {
+  background: linear-gradient(145deg, var(--bg-surface), var(--bg-panel));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.stats-summary-card:hover {
+  border-color: rgba(76, 157, 243, 0.3);
+  transform: translateY(-2px);
+}
+
+.stats-summary-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.stats-summary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stats-summary-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-heading);
+  font-family: var(--mono);
+  line-height: 1;
+}
+
+.stats-summary-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ─── Template Card Enhancements ────────────────────────────────────────── */
+.template-card-enhanced {
+  background: linear-gradient(145deg, var(--bg-surface), var(--bg-panel));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.template-card-enhanced:hover {
+  transform: translateY(-2px);
+  border-color: rgba(76, 157, 243, 0.3);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.template-card-enhanced::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-light), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.template-card-enhanced:hover::before {
+  opacity: 1;
+}
+
 .markdown-body {
   color: var(--text);
   font-size: 0.875rem;
@@ -2772,5 +3231,61 @@ flex-wrap: wrap;
 
   .quick-actions-grid-enhanced {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Missing keyframes */
+@keyframes pulse-glow-warning {
+  0%, 100% { box-shadow: 0 0 10px rgba(245, 158, 11, 0.1); }
+  50% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); }
+}
+
+/* ─── Responsive adjustments for Rooms page ──────────────────────────────── */
+@media (max-width: 768px) {
+  .rooms-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .rooms-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-input-wrapper {
+    max-width: none;
+  }
+
+  .rooms-stats-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .rooms-stats-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-summary-card {
+    padding: 1rem;
+  }
+
+  .room-card {
+    padding: 1rem;
+  }
+
+  .empty-state-enhanced {
+    padding: 2rem 1rem;
+  }
+
+  .empty-state-enhanced .icon {
+    width: 60px;
+    height: 60px;
+    font-size: 2rem;
   }
 }

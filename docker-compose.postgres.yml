@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Main application - API server + Web UI
   # Connects to EXTERNAL PostgreSQL and Redis services

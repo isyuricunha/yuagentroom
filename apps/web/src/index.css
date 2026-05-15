@@ -1,51 +1,59 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
-/* ─── Cursor-like Design Tokens ────────────────────────────────────────── */
+/* ─── Cursor Dark Theme Design Tokens ──────────────────────────────────── */
 :root {
-  /* Ultra-dark IDE aesthetic colors */
-  --bg-app: #000000;           /* Pure black main background */
-  --bg-panel: #0a0a0a;         /* Marginally lighter panels for sidebar */
-  --bg-surface: #141414;       /* Cards and Modals */
-  --bg-surface-hover: #1e1e1e; /* Buttons/Hover areas */
-  --bg-input: #121212;         /* Input boxes */
-  
-  --border: #222222;           /* Stark, minimal lines */
-  --border-focus: #3b82f6;     /* Standard subtle blue */
-  --border-light: rgba(255, 255, 255, 0.04);
-  
-  --text: #cccccc;             /* Desaturated IDE text */
-  --text-muted: #737373;       /* Muted gray for secondary */
-  --text-heading: #f5f5f5;     /* Pure white for headings */
-  
-  --accent: #2563eb;           /* Deep reliable blue */
-  --accent-light: #3b82f6;     /* Hover blue */
-  --accent-glow: rgba(37, 99, 235, 0.1); 
-  
-  /* Status Colors */
-  --danger: #ef4444;           
-  --danger-glow: rgba(239, 68, 68, 0.1);
-  --success: #10b981;          
-  
-  --running: #3b82f6;          
-  --idle: #525252;             
-  --paused: #f59e0b;           
+/* Background colors - Ultra dark IDE aesthetic */
+--bg-app: #141414; /* Main background - Cursor dark base */
+--bg-panel: #141414; /* Sidebar and panels */
+--bg-surface: #1a1a1a; /* Cards, modals, elevated surfaces */
+--bg-surface-hover: #2a2a2a; /* Hover states */
+--bg-input: #2a2a2a; /* Input fields */
 
-  --radius-sm: 4px;            /* Extremely sharp corners, almost square */
-  --radius: 6px;               
-  --radius-lg: 8px;           
+/* Borders */
+--border: #2a2a2a; /* Main borders */
+--border-focus: #4c9df3; /* Focus border (Cursor blue) */
+--border-light: rgba(255, 255, 255, 0.04); /* Subtle borders */
 
-  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --sans: 'Inter', system-ui, -apple-system, sans-serif;
+/* Text colors */
+--text: #cccccc; /* Primary text (desaturated) */
+--text-muted: #808080; /* Secondary text */
+--text-heading: #ffffff; /* Headings */
 
-  /* Base properties */
-  font-family: var(--sans);
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--text);
-  background: var(--bg-app);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* Accent colors - Cursor blue */
+--accent: #4c9df3; /* Cursor blue accent */
+--accent-light: #66aefa; /* Hover state */
+--accent-glow: rgba(76, 157, 243, 0.15); /* Glow effect */
+
+/* Status colors */
+--danger: #bf616a; /* Red - errors */
+--danger-glow: rgba(191, 97, 106, 0.15);
+--success: #a3be8c; /* Green - success */
+--warning: #ebcb8b; /* Yellow - warnings */
+--info: #88c0d0; /* Cyan - info */
+
+/* State colors */
+--running: #88c0d0; /* Active/running */
+--idle: #4c565a; /* Idle state */
+--paused: #ebcb8b; /* Paused state */
+
+/* Border radius - sharp corners like Cursor */
+--radius-sm: 4px;
+--radius: 6px;
+--radius-lg: 8px;
+
+/* Fonts */
+--mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+--sans: 'Inter', system-ui, -apple-system, sans-serif;
+
+/* Base properties */
+font-family: var(--sans);
+font-size: 14px;
+line-height: 1.5;
+color: var(--text);
+background: var(--bg-app);
+-webkit-font-smoothing: antialiased;
+-moz-osx-font-smoothing: grayscale;
 }
 
 /* ─── Reset ─────────────────────────────────────────────────────────────── */
@@ -454,15 +462,15 @@ code, pre {
 
 /* The Cursor-like primary button */
 .btn-primary {
-  background: var(--accent);
-  color: #fff;
-  border: 1px solid #2563eb;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 12px var(--accent-glow);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+background: var(--accent);
+color: #141414;
+border: 1px solid var(--accent);
+box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0 12px var(--accent-glow);
+text-shadow: none;
 }
 .btn-primary:hover {
-  background: #4f8df7;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 15px rgba(59, 130, 246, 0.4);
+background: var(--accent-light);
+box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 18px rgba(76, 157, 243, 0.4);
 }
 
 .btn-secondary {
@@ -713,22 +721,27 @@ code, pre {
 }
 
 .badge-idle {
-  background: rgba(139, 139, 153, 0.1);
-  color: var(--idle);
-  border: 1px solid rgba(139, 139, 153, 0.2);
+background: rgba(76, 86, 90, 0.2);
+color: var(--idle);
+border: 1px solid rgba(76, 86, 90, 0.3);
 }
 .badge-idle::before { background: var(--idle); }
 
 .badge-running {
-  background: rgba(59, 130, 246, 0.15);
-  color: var(--accent-light);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  box-shadow: 0 0 10px rgba(59, 130, 246, 0.1);
+background: rgba(136, 192, 208, 0.15);
+color: var(--running);
+border: 1px solid rgba(136, 192, 208, 0.3);
+box-shadow: 0 0 10px rgba(136, 192, 208, 0.1);
 }
 .badge-error {
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--danger);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+background: rgba(191, 97, 106, 0.15);
+color: var(--danger);
+border: 1px solid rgba(191, 97, 106, 0.3);
+}
+.badge-warning {
+background: rgba(235, 203, 139, 0.15);
+color: var(--warning);
+border: 1px solid rgba(235, 203, 139, 0.3);
 }
 
 @keyframes dot-pulse {

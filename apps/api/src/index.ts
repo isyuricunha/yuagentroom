@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import fastifyJwt from '@fastify/jwt';
 import fastifyFormbody from '@fastify/formbody';
+import fastifyStatic from '@fastify/static';
 import { config } from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -18,6 +19,9 @@ import { getRoomRunner } from './engine/room-runner.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 config({ path: join(__dirname, '../../../.env') });
+
+// Path to the built web frontend (relative to apps/api/dist/)
+const webDistPath = join(__dirname, '../../web/dist');
 
 import { hashPassword } from './utils/password.js';
 
@@ -82,20 +86,21 @@ async function main(): Promise<void> {
     // No cookie config - reads from Authorization header by default
   });
 
-  // Require Authentication via JWT for API
-  // Always require auth now since we have a default admin user
-  app.addHook('onRequest', async (req, reply) => {
-    if (req.method === 'OPTIONS') return; // Pre-flight
-    // Allow unauthenticated access only to health and auth endpoints
-    if (req.url === '/health' || req.url.startsWith('/api/auth')) return;
+// Require Authentication via JWT for API routes only
+// Static files and SPA routes are served without auth — the frontend
+// handles its own auth flow by calling /api/auth/login
+app.addHook('onRequest', async (req, reply) => {
+  if (req.method === 'OPTIONS') return; // Pre-flight
+  // Allow unauthenticated access to health, auth, and non-API routes
+  if (req.url === '/health' || req.url.startsWith('/api/auth') || !req.url.startsWith('/api')) return;
 
-    // For all other routes, require authentication
-    try {
-      await req.jwtVerify();
-    } catch {
-      return reply.status(401).send({ error: 'Unauthorized' });
-    }
-  });
+  // For API routes, require authentication
+  try {
+    await req.jwtVerify();
+  } catch {
+    return reply.status(401).send({ error: 'Unauthorized' });
+  }
+});
 
   app.addHook('preHandler', async (req, reply) => {
     if (req.method === 'OPTIONS') {
@@ -112,6 +117,22 @@ async function main(): Promise<void> {
 
   // Health check
   app.get('/health', async () => ({ status: 'ok' }));
+
+  // Serve the built web frontend as static files
+  await app.register(fastifyStatic, {
+    root: webDistPath,
+    prefix: '/',
+    wildcard: false,
+  });
+
+  // SPA fallback: serve index.html for any non-API route that doesn't
+  // match a static file, so client-side routing (BrowserRouter) works
+  app.setNotFoundHandler((req, reply) => {
+    if (req.url.startsWith('/api')) {
+      return reply.status(404).send({ error: 'Not found' });
+    }
+    return reply.sendFile('index.html');
+  });
 
   // Start server
   const address = await app.listen({ port: env.PORT, host: '0.0.0.0' });

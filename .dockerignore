@@ -1,0 +1,40 @@
+# Dependencies (installed fresh inside the builder stage)
+node_modules
+
+# Build outputs (rebuilt inside the builder stage)
+dist
+.turbo
+.next
+out
+build
+
+# Environment files (should not be baked into the image)
+.env
+.env.*
+!.env.docker.example
+
+# Data directories
+data
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# IDE and OS files
+.vscode
+.idea
+.DS_Store
+*.pem
+
+# Git
+.git
+.git-hooks
+
+# Docker
+docker-compose*.yml
+
+# Misc
+coverage
+.vercel
+*.log
+.pnp
+.pnp.js

@@ -5,6 +5,7 @@ import { RoomsPage } from './pages/RoomsPage.tsx';
 import { RoomPage } from './pages/RoomPage.tsx';
 import { SettingsPage } from './pages/SettingsPage.tsx';
 import { AdminUsersPage } from './pages/AdminUsersPage.tsx';
+import { AdminDashboardPage } from './pages/AdminDashboardPage.tsx';
 import { LoginPage } from './pages/LoginPage.tsx';
 import { FirstLoginChangePasswordPage } from './pages/FirstLoginChangePasswordPage.tsx';
 import { DashboardPage } from './pages/DashboardPage.tsx';
@@ -38,6 +39,7 @@ function App() {
           <Route path="agents" element={<AgentsPage />} />
           <Route path="rooms" element={<RoomsPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
           <Route path="admin/users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} />
         </Route>
 

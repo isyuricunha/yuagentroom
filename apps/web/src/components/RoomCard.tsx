@@ -4,7 +4,7 @@ import { Link } from 'react-router';
 import type { Room } from '@agentroom/shared';
 import { StatusBadge } from './StatusBadge.tsx';
 import { Button } from './Button.tsx';
-import { Clock, Layers, MessageSquare } from 'lucide-react';
+import { Clock, Layers, MessageSquare, Trash2 } from 'lucide-react';
 
 interface RoomCardProps {
   room: Room;
@@ -34,138 +34,138 @@ export function RoomCard({ room, onDelete, isDeleting = false }: RoomCardProps) 
   }, []);
 
   return (
-    <div className="card room-card-container" style={{ position: 'relative' }}>
-      {/* Delete button - positioned absolutely over the card */}
+    <div className="card room-card" style={{ position: 'relative' }}>
+      {/* Delete button - absolutely positioned in top-right corner */}
       <div
-        className="room-card-actions"
+        className="room-card-delete"
         style={{
           position: 'absolute',
-          top: '0.5rem',
-          right: '0.5rem',
-          zIndex: 20,
-          display: 'flex',
-          gap: '0.5rem'
+          top: '0.75rem',
+          right: '0.75rem',
+          zIndex: 10
         }}
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
       >
         {isDeleting || showDeleteConfirm ? (
-          <>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
             <Button
               size="sm"
+              variant="ghost"
               onClick={handleDeleteCancel}
               disabled={isDeleting}
             >
               {t('rooms.deleteCancel')}
             </Button>
             <Button
-              variant="danger"
               size="sm"
+              variant="danger"
               onClick={handleDeleteConfirm}
               disabled={isDeleting}
             >
-              {isDeleting ? t('rooms.status') : t('rooms.deleteConfirm')}
+              {t('rooms.deleteConfirm')}
             </Button>
-          </>
+          </div>
         ) : (
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
             onClick={handleDeleteClick}
             style={{
+              background: 'none',
+              border: 'none',
               color: 'var(--danger)',
-              backgroundColor: 'var(--bg-secondary)',
-              border: '1px solid var(--border)',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+              cursor: 'pointer',
+              padding: '0.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '4px',
+              transition: 'background-color 0.2s'
             }}
             aria-label={`${t('rooms.delete')} ${room.name}`}
+            title={t('rooms.delete')}
           >
-            {t('rooms.delete')}
-          </Button>
+            <Trash2 size={18} />
+          </button>
         )}
       </div>
 
-      {/* Card content wrapped in Link */}
+      {/* Card content */}
       <Link
         to={`/rooms/${room.id}`}
         style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: '1rem',
+          gap: '0.75rem',
           textDecoration: 'none',
           color: 'inherit',
-          paddingRight: '5rem' // Space for delete button
+          minHeight: '140px'
         }}
         role="article"
         aria-label={`Room: ${room.name}`}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-            <div
-              className="message-avatar"
-              style={{
-                width: 40,
-                height: 40,
-                background: 'rgba(59, 130, 246, 0.1)',
-                color: 'var(--accent)',
-                border: '1px solid rgba(59, 130, 246, 0.2)'
-              }}
-              aria-hidden="true"
-            >
-              <MessageSquare size={20} />
-            </div>
-            <div>
-              <h3 style={{ margin: 0, fontSize: '1.05rem', color: 'var(--text-heading)' }}>
-                {room.name}
-              </h3>
-              <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                {t('rooms.created')} {formatDate(room.createdAt)}
-              </p>
-            </div>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', paddingTop: '2.5rem' }}>
+          <div
+            className="room-card-icon"
+            style={{
+              width: '40px',
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(59, 130, 246, 0.1)',
+              color: 'var(--accent)',
+              borderRadius: '8px',
+              flexShrink: 0
+            }}
+            aria-hidden="true"
+          >
+            <MessageSquare size={20} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: 'var(--text-heading)' }}>
+              {room.name}
+            </h3>
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              {t('rooms.created')} {formatDate(room.createdAt)}
+            </p>
           </div>
           <StatusBadge status={room.status} />
         </div>
 
+        {/* Topic/Description */}
         <div
           style={{
-            flex: 1,
-            fontSize: '0.85rem',
+            fontSize: '0.875rem',
             color: room.topic ? 'var(--text)' : 'var(--text-muted)',
-            fontStyle: room.topic ? 'normal' : 'italic',
+            fontStyle: !room.topic ? 'italic' : 'normal',
             lineHeight: 1.5,
-            marginTop: '0.5rem'
+            paddingTop: '0.5rem'
           }}
         >
           {room.topic || t('rooms.noTopic')}
         </div>
 
+        {/* Footer stats */}
         <div
           style={{
-            marginTop: 'auto',
             display: 'flex',
             gap: '1rem',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingTop: '1rem',
-            borderTop: '1px solid var(--border)'
+            paddingTop: '0.75rem',
+            marginTop: 'auto',
+            borderTop: '1px solid var(--border)',
+            fontSize: '0.75rem',
+            color: 'var(--text-muted)',
+            fontFamily: 'var(--mono)'
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              gap: '1rem',
-              fontSize: '0.75rem',
-              color: 'var(--text-muted)',
-              fontFamily: 'var(--mono)'
-            }}
-          >
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }} title={t('rooms.turnDelay')}>
-              <Clock size={14} aria-hidden="true" /> {room.turnDelayMs}ms
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }} title={t('rooms.contextLimit')}>
-              <Layers size={14} aria-hidden="true" /> {room.maxContextMessages} {t('rooms.msgs')}
-            </span>
-          </div>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <Clock size={14} aria-hidden="true" />
+            {room.turnDelayMs}ms
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <Layers size={14} aria-hidden="true" />
+            {room.maxContextMessages} {t('rooms.msgs')}
+          </span>
         </div>
       </Link>
     </div>

@@ -214,6 +214,30 @@
     "close": "Fechar"
   },
   "admin": {
+    "dashboard": {
+      "title": "Painel Administrativo",
+      "description": "Administração e monitoramento do sistema.",
+      "welcome": "Bem-vindo ao Painel Administrativo",
+      "stats": {
+        "totalUsers": "Total de Usuários",
+        "totalRooms": "Total de Salas",
+        "totalAgents": "Total de Agentes",
+        "activeRooms": "Salas Ativas",
+        "systemStatus": "Status do Sistema"
+      },
+      "sections": {
+        "users": "Gerenciamento de Usuários",
+        "rooms": "Gerenciamento de Salas",
+        "agents": "Gerenciamento de Agentes",
+        "settings": "Configurações do Sistema"
+      },
+      "quickActions": {
+        "manageUsers": "Gerenciar Usuários",
+        "manageRooms": "Gerenciar Salas",
+        "manageAgents": "Gerenciar Agentes",
+        "systemSettings": "Configurações do Sistema"
+      }
+    },
     "users": {
       "title": "Gerenciamento de Usuários",
       "description": "Administre contas e permissões de usuários.",

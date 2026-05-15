@@ -214,6 +214,30 @@
     "close": "Close"
   },
   "admin": {
+    "dashboard": {
+      "title": "Admin Dashboard",
+      "description": "System administration and monitoring.",
+      "welcome": "Welcome to the Admin Dashboard",
+      "stats": {
+        "totalUsers": "Total Users",
+        "totalRooms": "Total Rooms",
+        "totalAgents": "Total Agents",
+        "activeRooms": "Active Rooms",
+        "systemStatus": "System Status"
+      },
+      "sections": {
+        "users": "User Management",
+        "rooms": "Room Management",
+        "agents": "Agent Management",
+        "settings": "System Settings"
+      },
+      "quickActions": {
+        "manageUsers": "Manage Users",
+        "manageRooms": "Manage Rooms",
+        "manageAgents": "Manage Agents",
+        "systemSettings": "System Settings"
+      }
+    },
     "users": {
       "title": "User Management",
       "description": "Administer user accounts and permissions.",

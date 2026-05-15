@@ -212,5 +212,34 @@
     "delete": "Eliminar",
     "edit": "Editar",
     "close": "Cerrar"
+  },
+  "admin": {
+    "users": {
+      "title": "Gestión de Usuarios",
+      "description": "Administra cuentas y permisos de usuarios.",
+      "username": "Nombre de Usuario",
+      "email": "Correo",
+      "role": "Rol",
+      "created": "Creado",
+      "actions": "Acciones",
+      "admin": "Administrador",
+      "user": "Usuario",
+      "changeRole": "Cambiar rol",
+      "deleteUser": "Eliminar usuario",
+      "deleteConfirm": "¿Estás seguro de que deseas eliminar al usuario \"{username}\"? Esta acción no se puede deshacer.",
+      "deleteConfirmTitle": "Confirmar Eliminación",
+      "confirmDelete": "Eliminar",
+      "cancelDelete": "Cancelar",
+      "updating": "Actualizando...",
+      "deleting": "Eliminando...",
+      "loading": "Cargando usuarios...",
+      "errorLoading": "Error al cargar usuarios",
+      "errorUpdating": "Error al actualizar rol de usuario",
+      "errorDeleting": "Error al eliminar usuario",
+      "successUpdated": "Rol de usuario actualizado exitosamente",
+      "successDeleted": "Usuario eliminado exitosamente",
+      "noUsers": "No se encontraron usuarios",
+      "searchPlaceholder": "Buscar usuarios..."
+    }
   }
 }

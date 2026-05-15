@@ -212,5 +212,34 @@
     "delete": "Delete",
     "edit": "Edit",
     "close": "Close"
+  },
+  "admin": {
+    "users": {
+      "title": "User Management",
+      "description": "Administer user accounts and permissions.",
+      "username": "Username",
+      "email": "Email",
+      "role": "Role",
+      "created": "Created",
+      "actions": "Actions",
+      "admin": "Admin",
+      "user": "User",
+      "changeRole": "Change role",
+      "deleteUser": "Delete user",
+      "deleteConfirm": "Are you sure you want to delete user \"{username}\"? This action cannot be undone.",
+      "deleteConfirmTitle": "Confirm Delete",
+      "confirmDelete": "Delete",
+      "cancelDelete": "Cancel",
+      "updating": "Updating...",
+      "deleting": "Deleting...",
+      "loading": "Loading users...",
+      "errorLoading": "Failed to load users",
+      "errorUpdating": "Failed to update user role",
+      "errorDeleting": "Failed to delete user",
+      "successUpdated": "User role updated successfully",
+      "successDeleted": "User deleted successfully",
+      "noUsers": "No users found",
+      "searchPlaceholder": "Search users..."
+    }
   }
 }

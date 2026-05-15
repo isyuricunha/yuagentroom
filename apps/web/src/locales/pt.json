@@ -212,5 +212,34 @@
     "delete": "Excluir",
     "edit": "Editar",
     "close": "Fechar"
+  },
+  "admin": {
+    "users": {
+      "title": "Gerenciamento de Usuários",
+      "description": "Administre contas e permissões de usuários.",
+      "username": "Nome de Usuário",
+      "email": "Email",
+      "role": "Função",
+      "created": "Criado",
+      "actions": "Ações",
+      "admin": "Administrador",
+      "user": "Usuário",
+      "changeRole": "Alterar função",
+      "deleteUser": "Excluir usuário",
+      "deleteConfirm": "Tem certeza que deseja excluir o usuário \"{username}\"? Esta ação não pode ser desfeita.",
+      "deleteConfirmTitle": "Confirmar Exclusão",
+      "confirmDelete": "Excluir",
+      "cancelDelete": "Cancelar",
+      "updating": "Atualizando...",
+      "deleting": "Excluindo...",
+      "loading": "Carregando usuários...",
+      "errorLoading": "Erro ao carregar usuários",
+      "errorUpdating": "Erro ao atualizar função do usuário",
+      "errorDeleting": "Erro ao excluir usuário",
+      "successUpdated": "Função do usuário atualizada com sucesso",
+      "successDeleted": "Usuário excluído com sucesso",
+      "noUsers": "Nenhum usuário encontrado",
+      "searchPlaceholder": "Buscar usuários..."
+    }
   }
 }

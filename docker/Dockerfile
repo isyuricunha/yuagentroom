@@ -26,7 +26,6 @@ WORKDIR /app
 
 # Copy workspace root files required by pnpm
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
-COPY --from=builder /app/.npmrc ./
 
 # Copy sub-project package.json files into their workspace paths
 # This ensures pnpm creates the correct symlink structure for each workspace

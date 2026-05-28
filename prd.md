@@ -1,7 +1,7 @@
 # AgentRoom — Product Requirements Document
 
 **Version:** 0.1 — draft
-**License:** AGPL-3.0
+**License:** Apache-2.0
 **Repo:** `isyuricunha/agentroom`
 **Image:** `ghcr.io/isyuricunha/agentroom`
 
@@ -24,7 +24,6 @@ Connects to any OpenAI-compatible endpoint (e.g. bifrost at `bifrost.yuricunha.c
 | `better-sqlite3` | `^12.9.0` | sqlite driver |
 | `pg` | latest | postgresql driver |
 | `ws` | latest | websocket server |
-| `ioredis` | latest | pub/sub (optional, for multi-instance) |
 | `react` | `^19.2.5` | frontend ui |
 | `vite` | `^8.0.10` | bundler + dev server |
 | `@tailwindcss/vite` | `^4.2.4` | styling (css-first, no `tailwind.config.js`) |
@@ -234,22 +233,28 @@ better-sqlite3 native bindings compiled successfully on install (done in 1.5s)
 node:24-slim (debian bookworm) chosen over alpine to avoid musl libc incompatibility with native addons
 
 11. MVP Scope
-in scope (v1)
 
-agent crud (name, system prompt, model, provider url, api key)
-room crud with agent list management
-turn loop with LLM moderator
-dynamic agent join/leave at runtime
-human can participate in the conversation
-context manager with automatic summarization
-real-time websocket
-sqlite + postgresql via drizzle
-docker multistage + compose
-cursor-like UI
-out of scope (v2+)
+### In scope (v1)
 
-authentication
-per-token streaming of agent responses
-exportable conversation history
-multi-instance horizontal scaling with redis pub/sub
-voice/TTS per agent (v3)
+- agent crud (name, system prompt, model, provider url, api key)
+- room crud with agent list management
+- turn loop with LLM moderator
+- dynamic agent join/leave at runtime
+- human can participate in the conversation
+- context manager with automatic summarization
+- real-time websocket
+- sqlite + postgresql via drizzle
+- docker multistage + compose
+- cursor-like ui
+- authentication with jwt
+- per-token streaming of agent responses
+- exportable conversation history (json + markdown)
+- scheduled rooms with cron-based scheduler
+- message reactions
+- agent and room templates
+- multi-language support (en, pt, es)
+
+### Out of scope (v2+)
+
+- multi-instance horizontal scaling with redis pub/sub
+- voice/TTS per agent (v3)

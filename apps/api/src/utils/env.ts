@@ -5,6 +5,7 @@ export interface Env {
   JWT_SECRET: string;
   ALLOW_REGISTRATION: boolean;
   ADMIN_PASSWORD?: string;
+  CORS_ORIGINS?: string;
 }
 
 let _env: Env | null = null;
@@ -19,6 +20,7 @@ export function readEnv(): Env {
   const JWT_SECRET = process.env['JWT_SECRET'];
   const ALLOW_REGISTRATION = process.env['ALLOW_REGISTRATION'] === 'true';
   const ADMIN_PASSWORD = process.env['ADMIN_PASSWORD'];
+  const CORS_ORIGINS = process.env['CORS_ORIGINS'];
 
   if (!JWT_SECRET) {
     throw new Error('JWT_SECRET environment variable is required. Please set it in your .env file.');
@@ -28,6 +30,6 @@ export function readEnv(): Env {
     throw new Error(`Invalid PORT environment variable: "${rawPort}"`);
   }
 
-  _env = { DATABASE_URL, REDIS_URL, PORT, JWT_SECRET, ALLOW_REGISTRATION, ADMIN_PASSWORD };
+  _env = { DATABASE_URL, REDIS_URL, PORT, JWT_SECRET, ALLOW_REGISTRATION, ADMIN_PASSWORD, CORS_ORIGINS };
   return _env;
 }

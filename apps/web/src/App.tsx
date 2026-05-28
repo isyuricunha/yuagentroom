@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
 import { Layout } from './components/Layout.tsx';
+import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import { AgentsPage } from './pages/AgentsPage.tsx';
 import { RoomsPage } from './pages/RoomsPage.tsx';
 import { RoomPage } from './pages/RoomPage.tsx';
@@ -29,23 +30,25 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/first-login-change" element={<FirstLoginChangePasswordPage />} />
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/first-login-change" element={<FirstLoginChangePasswordPage />} />
 
-        <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-          <Route index element={<DashboardPage />} />
-          <Route path="agents" element={<AgentsPage />} />
-          <Route path="rooms" element={<RoomsPage />} />
-          <Route path="settings" element={<SettingsPage />} />
-          <Route path="admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
-          <Route path="admin/users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} />
-        </Route>
+          <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+            <Route index element={<DashboardPage />} />
+            <Route path="agents" element={<AgentsPage />} />
+            <Route path="rooms" element={<RoomsPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
+            <Route path="admin/users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} />
+          </Route>
 
-        <Route path="/rooms/:id" element={<ProtectedRoute><RoomPage /></ProtectedRoute>} />
-      </Routes>
-    </BrowserRouter>
+          <Route path="/rooms/:id" element={<ProtectedRoute><RoomPage /></ProtectedRoute>} />
+        </Routes>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

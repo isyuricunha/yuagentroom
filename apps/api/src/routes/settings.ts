@@ -1,12 +1,12 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { getDb } from '../db/index.js';
+import { dbSelect, dbUpsert } from '../db/db-helpers.js';
 
 const settingsPlugin: FastifyPluginAsync = async (fastify) => {
   // GET /settings - get all user settings as an object
   fastify.get('/settings', async (_req, reply) => {
     const client = await getDb();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const records = await (client.db as any).select().from(client.schema.settings);
+    const records = await dbSelect(client, client.schema.settings);
     
     // Convert array of {key, value} to Object
     const settings: Record<string, string> = {};
@@ -23,21 +23,13 @@ const settingsPlugin: FastifyPluginAsync = async (fastify) => {
     const client = await getDb();
     
     for (const [key, value] of Object.entries(payload)) {
-      if (client.dialect === 'sqlite') {
-        // SQLite upsert
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (client.db as any).insert(client.schema.settings).values({ key, value }).onConflictDoUpdate({
-          target: client.schema.settings.key,
-          set: { value },
-        });
-      } else {
-        // Postgres upsert
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (client.db as any).insert(client.schema.settings).values({ key, value }).onConflictDoUpdate({
-          target: client.schema.settings.key,
-          set: { value },
-        });
-      }
+      await dbUpsert(
+        client,
+        client.schema.settings,
+        { key, value },
+        client.schema.settings.key,
+        { value },
+      );
     }
     
     return reply.send({ success: true });
@@ -48,8 +40,7 @@ const settingsPlugin: FastifyPluginAsync = async (fastify) => {
     const refresh = req.query.refresh === 'true';
     const client = await getDb();
     
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const records: {key:string, value:string}[] = await (client.db as any).select().from(client.schema.settings);
+    const records = await dbSelect(client, client.schema.settings) as {key:string, value:string}[];
     
     const settings: Record<string, string> = {};
     for (const r of records) settings[r.key] = r.value;
@@ -96,11 +87,13 @@ const settingsPlugin: FastifyPluginAsync = async (fastify) => {
       const models = data.data.map((m: any) => m.id as string).sort((a: string, b: string) => a.localeCompare(b));
       
       // Save cache
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (client.db as any).insert(client.schema.settings).values({ key: 'cached_models', value: JSON.stringify(models) }).onConflictDoUpdate({
-        target: client.schema.settings.key,
-        set: { value: JSON.stringify(models) },
-      });
+      await dbUpsert(
+        client,
+        client.schema.settings,
+        { key: 'cached_models', value: JSON.stringify(models) },
+        client.schema.settings.key,
+        { value: JSON.stringify(models) },
+      );
       
       return reply.send(models);
     } catch (err) {

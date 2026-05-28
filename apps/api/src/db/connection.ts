@@ -109,6 +109,7 @@ export async function getDb(): Promise<DbClient> {
         agent_id TEXT,
         role TEXT NOT NULL,
         content TEXT NOT NULL,
+        thoughts TEXT,
         created_at TEXT NOT NULL
       );
       
@@ -153,7 +154,7 @@ export async function getDb(): Promise<DbClient> {
     name TEXT NOT NULL UNIQUE,
     description TEXT NOT NULL,
     system_prompt TEXT NOT NULL,
-    model TEXT NOT NULL,
+    model TEXT NOT NULL DEFAULT 'gpt-4',
     temperature INTEGER NOT NULL DEFAULT 70,
     max_tokens INTEGER NOT NULL DEFAULT 1024,
     is_default INTEGER NOT NULL DEFAULT 0,
@@ -184,6 +185,13 @@ export async function getDb(): Promise<DbClient> {
   if (!hasFirstLogin) {
     sqlite.exec("ALTER TABLE users ADD COLUMN first_login INTEGER NOT NULL DEFAULT 1");
     sqlite.exec("ALTER TABLE users ADD COLUMN first_login_at TEXT");
+  }
+
+  // Migration: Add thoughts to messages if it doesn't exist
+  const msgTableInfo = sqlite.prepare("PRAGMA table_info(messages)").all() as any[];
+  const hasThoughts = msgTableInfo.some((col) => col.name === 'thoughts');
+  if (!hasThoughts) {
+    sqlite.exec("ALTER TABLE messages ADD COLUMN thoughts TEXT");
   }
 
     _client = { dialect: 'sqlite', db, schema: sqliteSchema };
@@ -249,6 +257,7 @@ export async function getDb(): Promise<DbClient> {
       agent_id TEXT,
       role TEXT NOT NULL,
       content TEXT NOT NULL,
+      thoughts TEXT,
       created_at TIMESTAMPTZ NOT NULL
     );
     
@@ -293,7 +302,7 @@ export async function getDb(): Promise<DbClient> {
     name TEXT NOT NULL UNIQUE,
     description TEXT NOT NULL,
     system_prompt TEXT NOT NULL,
-    model TEXT NOT NULL,
+    model TEXT NOT NULL DEFAULT 'gpt-4',
     temperature INTEGER NOT NULL DEFAULT 70,
     max_tokens INTEGER NOT NULL DEFAULT 1024,
     is_default INTEGER NOT NULL DEFAULT 0,
@@ -330,6 +339,16 @@ export async function getDb(): Promise<DbClient> {
       END IF;
       IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='first_login_at') THEN
         ALTER TABLE users ADD COLUMN first_login_at TIMESTAMPTZ;
+      END IF;
+    END $$;
+  `);
+
+  // Migration for PG: add thoughts column if missing
+  await pool.query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='thoughts') THEN
+        ALTER TABLE messages ADD COLUMN thoughts TEXT;
       END IF;
     END $$;
   `);

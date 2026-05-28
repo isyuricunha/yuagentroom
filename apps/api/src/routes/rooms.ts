@@ -1,18 +1,16 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { randomUUID } from 'crypto';
-import { eq, and, isNull, desc, inArray } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
+import { dbSelect, dbInsert, dbDelete, dbSelectColumns, eq, and, isNull, desc, inArray, dialectDate } from '../db/db-helpers.js';
 import type { ConversationExport, ExportedMessage } from '@agentroom/shared';
 
 const roomsPlugin: FastifyPluginAsync = async (fastify) => {
   // GET /rooms — list all rooms
   fastify.get('/rooms', async (_req, reply) => {
     const client = await getDb();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rooms = await (client.db as any)
-      .select()
-      .from(client.schema.rooms)
-      .orderBy(client.schema.rooms.createdAt);
+    const rooms = await dbSelect(client, client.schema.rooms, {
+      orderBy: desc(client.schema.rooms.createdAt),
+    });
     return reply.send(rooms);
   });
 
@@ -44,24 +42,19 @@ const roomsPlugin: FastifyPluginAsync = async (fastify) => {
     const id = randomUUID();
     const now = new Date();
 
-    const row = {
+    await dbInsert(client, client.schema.rooms, {
       id,
       name,
       topic: topic ?? null,
-      status: 'idle' as const,
+      status: 'idle',
       turnDelayMs,
       maxContextMessages,
-      createdAt: client.dialect === 'sqlite' ? now.toISOString() : now,
-    };
+      createdAt: dialectDate(client, now),
+    } as any);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (client.db as any).insert(client.schema.rooms).values(row);
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rows: unknown[] = await (client.db as any)
-      .select()
-      .from(client.schema.rooms)
-      .where(eq(client.schema.rooms.id, id));
+    const rows = await dbSelect(client, client.schema.rooms, {
+      where: eq(client.schema.rooms.id, id),
+    });
 
     return reply.status(201).send(rows[0]);
   });
@@ -71,43 +64,40 @@ const roomsPlugin: FastifyPluginAsync = async (fastify) => {
     const { id } = req.params;
     const client = await getDb();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rooms: unknown[] = await (client.db as any)
-      .select()
-      .from(client.schema.rooms)
-      .where(eq(client.schema.rooms.id, id));
+    const rooms = await dbSelect(client, client.schema.rooms, {
+      where: eq(client.schema.rooms.id, id),
+    });
 
     if (rooms.length === 0) {
       return reply.status(404).send({ error: 'Room not found' });
     }
 
     // Get active agents (left_at is null)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const roomAgentRows: Array<{ agentId: string }> = await (client.db as any)
-      .select({ agentId: client.schema.roomAgents.agentId })
-      .from(client.schema.roomAgents)
-      .where(
-        and(
+    const roomAgentRows = await dbSelectColumns(
+      client,
+      client.schema.roomAgents,
+      { agentId: true },
+      {
+        where: and(
           eq(client.schema.roomAgents.roomId, id),
           isNull(client.schema.roomAgents.leftAt),
         ),
-      );
+      },
+    );
 
-    const agentIds = roomAgentRows.map((r) => r.agentId);
-  
+    const agentIds = (roomAgentRows as Array<{ agentId: string }>).map((r) => r.agentId);
+
     let agents: unknown[] = [];
     if (agentIds.length > 0) {
       // Fetch all agents in a single query using inList
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      agents = await (client.db as any)
-        .select()
-        .from(client.schema.agents)
-        .where(inArray(client.schema.agents.id, agentIds));
+      agents = await dbSelect(client, client.schema.agents, {
+        where: inArray(client.schema.agents.id, agentIds),
+      });
     }
-  
+
     return reply.send({ ...(rooms[0] as object), agents });
   });
-  
+
   // GET /rooms/:roomId/export — export conversation as JSON or Markdown
   fastify.get<{
     Params: { roomId: string };
@@ -116,43 +106,37 @@ const roomsPlugin: FastifyPluginAsync = async (fastify) => {
     const { roomId } = req.params;
     const format = req.query.format ?? 'json';
     const client = await getDb();
-  
+
     // Verify room exists
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const roomRows: unknown[] = await (client.db as any)
-      .select()
-      .from(client.schema.rooms)
-      .where(eq(client.schema.rooms.id, roomId));
-  
+    const roomRows = await dbSelect(client, client.schema.rooms, {
+      where: eq(client.schema.rooms.id, roomId),
+    });
+
     if (roomRows.length === 0) {
       return reply.status(404).send({ error: 'Room not found' });
     }
-  
+
     const room = roomRows[0] as { id: string; name: string };
-  
+
     // Get all messages for the room
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const messageRows: unknown[] = await (client.db as any)
-      .select()
-      .from(client.schema.messages)
-      .where(eq(client.schema.messages.roomId, roomId))
-      .orderBy(desc(client.schema.messages.createdAt));
-  
+    const messageRows = await dbSelect(client, client.schema.messages, {
+      where: eq(client.schema.messages.roomId, roomId),
+      orderBy: desc(client.schema.messages.createdAt),
+    });
+
     // Get all agents that sent messages
     const messageRowsWithTypes = messageRows as { agentId: string | null }[];
     const agentIds = [...new Set(messageRowsWithTypes.map(m => m.agentId).filter((id): id is string => id !== null))];
-    
+
     let agents: { id: string; name: string }[] = [];
     if (agentIds.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      agents = await (client.db as any)
-        .select({ id: client.schema.agents.id, name: client.schema.agents.name })
-        .from(client.schema.agents)
-        .where(inArray(client.schema.agents.id, agentIds as string[]));
+      agents = await dbSelect(client, client.schema.agents, {
+        where: inArray(client.schema.agents.id, agentIds as string[]),
+      }) as { id: string; name: string }[];
     }
-  
+
     const agentMap = new Map(agents.map(a => [a.id, a.name]));
-  
+
     const exportedMessages: ExportedMessage[] = (messageRows as {
       id: string;
       role: string;
@@ -166,7 +150,7 @@ const roomsPlugin: FastifyPluginAsync = async (fastify) => {
       senderName: msg.agentId ? agentMap.get(msg.agentId) : 'Human',
       createdAt: msg.createdAt,
     }));
-  
+
     if (format === 'md') {
       // Return as Markdown text
       const mdContent = [
@@ -181,12 +165,12 @@ const roomsPlugin: FastifyPluginAsync = async (fastify) => {
           return `**[${timestamp}] ${msg.senderName ?? 'Unknown'}:**\n\n${msg.content}\n\n`;
         }),
       ].join('\n');
-  
+
       reply.header('Content-Type', 'text/markdown; charset=utf-8');
       reply.header('Content-Disposition', `attachment; filename="${room.name.replace(/\s+/g, '_')}_conversation.md"`);
       return reply.send(mdContent);
     }
-  
+
     // Return as JSON
     const exportData: ConversationExport = {
       roomId: room.id,
@@ -195,50 +179,46 @@ const roomsPlugin: FastifyPluginAsync = async (fastify) => {
       exportedAt: new Date().toISOString(),
       messages: exportedMessages,
     };
-  
+
     reply.header('Content-Type', 'application/json');
     reply.header('Content-Disposition', `attachment; filename="${room.name.replace(/\s+/g, '_')}_conversation.json"`);
     return reply.send(exportData);
   });
-  
+
   // GET /rooms/templates — list all available room templates
   fastify.get('/rooms/templates', async (_req, reply) => {
     const client = await getDb();
-  
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const templates: unknown[] = await (client.db as any)
-      .select()
-      .from(client.schema.roomTemplates)
-      .orderBy(desc(client.schema.roomTemplates.isDefault));
-  
+
+    const templates = await dbSelect(client, client.schema.roomTemplates, {
+      orderBy: desc(client.schema.roomTemplates.isDefault),
+    });
+
     return reply.send(templates);
   });
-  
+
   // POST /rooms/templates/:templateId/create — create room from template
   fastify.post<{
     Params: { templateId: string };
   }>('/rooms/templates/:templateId/create', async (req, reply) => {
     const { templateId } = req.params;
     const client = await getDb();
-  
+
     // Get template
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const templates: unknown[] = await (client.db as any)
-      .select()
-      .from(client.schema.roomTemplates)
-      .where(eq(client.schema.roomTemplates.id, templateId));
-  
+    const templates = await dbSelect(client, client.schema.roomTemplates, {
+      where: eq(client.schema.roomTemplates.id, templateId),
+    });
+
     if (templates.length === 0) {
       return reply.status(404).send({ error: 'Template not found' });
     }
-  
+
     const template = templates[0] as {
       name: string;
       description: string;
       configJson: string;
       agentConfigsJson: string;
     };
-  
+
     // Parse config JSON
     let config: { topic?: string; turnDelayMs?: number; maxContextMessages?: number } = {};
     try {
@@ -246,24 +226,21 @@ const roomsPlugin: FastifyPluginAsync = async (fastify) => {
     } catch {
       // Use defaults if parsing fails
     }
-  
+
     // Create the room
     const roomId = randomUUID();
     const now = new Date();
-  
-    const row = {
+
+    await dbInsert(client, client.schema.rooms, {
       id: roomId,
       name: template.name,
       topic: (config.topic || template.description) ?? null,
-      status: 'idle' as const,
+      status: 'idle',
       turnDelayMs: config.turnDelayMs ?? 2000,
       maxContextMessages: config.maxContextMessages ?? 50,
-      createdAt: client.dialect === 'sqlite' ? now.toISOString() : now,
-    };
-  
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (client.db as any).insert(client.schema.rooms).values(row);
-  
+      createdAt: dialectDate(client, now),
+    } as any);
+
     // Parse agent configs and add agents to room
     let agentConfigs: Array<{ agentId: string }> = [];
     try {
@@ -271,65 +248,57 @@ const roomsPlugin: FastifyPluginAsync = async (fastify) => {
     } catch {
       // No agents to add
     }
-  
+
     // Add each agent to the room
     for (const agentConfig of agentConfigs) {
       if (agentConfig.agentId) {
-        const roomAgentRow = {
+        await dbInsert(client, client.schema.roomAgents, {
           roomId,
           agentId: agentConfig.agentId,
-          joinedAt: client.dialect === 'sqlite' ? now.toISOString() : now,
+          joinedAt: now,
           leftAt: null,
-        };
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (client.db as any).insert(client.schema.roomAgents).values(roomAgentRow);
+        });
       }
     }
-  
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rows: unknown[] = await (client.db as any)
-      .select()
-      .from(client.schema.rooms)
-      .where(eq(client.schema.rooms.id, roomId));
-  
+
+    const rows = await dbSelect(client, client.schema.rooms, {
+      where: eq(client.schema.rooms.id, roomId),
+    });
+
     return reply.status(201).send(rows[0]);
   });
-  
+
   // GET /rooms/:roomId/analytics — get conversation analytics
   fastify.get<{
     Params: { roomId: string };
   }>('/rooms/:roomId/analytics', async (req, reply) => {
     const { roomId } = req.params;
     const client = await getDb();
-  
+
     // Verify room exists
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const roomRows: unknown[] = await (client.db as any)
-      .select()
-      .from(client.schema.rooms)
-      .where(eq(client.schema.rooms.id, roomId));
-  
+    const roomRows = await dbSelect(client, client.schema.rooms, {
+      where: eq(client.schema.rooms.id, roomId),
+    });
+
     if (roomRows.length === 0) {
       return reply.status(404).send({ error: 'Room not found' });
     }
-  
+
     const room = roomRows[0] as { createdAt: string };
-  
+
     // Get all messages for the room
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const messageRows: unknown[] = await (client.db as any)
-      .select()
-      .from(client.schema.messages)
-      .where(eq(client.schema.messages.roomId, roomId))
-      .orderBy(desc(client.schema.messages.createdAt));
-  
+    const messageRows = await dbSelect(client, client.schema.messages, {
+      where: eq(client.schema.messages.roomId, roomId),
+      orderBy: desc(client.schema.messages.createdAt),
+    });
+
     const messages = messageRows as {
       id: string;
       role: string;
       agentId: string | null;
       createdAt: string;
     }[];
-  
+
     // Calculate analytics
     const totalMessages = messages.length;
     const messagesPerAgent: Record<string, number> = {};
@@ -337,10 +306,10 @@ const roomsPlugin: FastifyPluginAsync = async (fastify) => {
     let lastMessageAt = room.createdAt;
     let avgResponseTimeMs = 0;
     const responseTimes: number[] = [];
-  
+
     // Track last human message time for response time calculation
     let lastHumanMessageTime: Date | null = null;
-  
+
     for (const msg of messages) {
       // Count messages per agent
       if (msg.agentId) {
@@ -349,13 +318,13 @@ const roomsPlugin: FastifyPluginAsync = async (fastify) => {
         humanMessageCount++;
         lastHumanMessageTime = new Date(msg.createdAt);
       }
-  
+
       // Track last message time
       const msgTime = new Date(msg.createdAt);
       if (msgTime > new Date(lastMessageAt)) {
         lastMessageAt = msg.createdAt;
       }
-  
+
       // Calculate response time if this is an agent message after a human message
       if (msg.role === 'agent' && lastHumanMessageTime) {
         const responseTime = msgTime.getTime() - lastHumanMessageTime.getTime();
@@ -365,15 +334,15 @@ const roomsPlugin: FastifyPluginAsync = async (fastify) => {
         lastHumanMessageTime = null; // Reset for next human message
       }
     }
-  
+
     // Calculate average response time
     if (responseTimes.length > 0) {
       avgResponseTimeMs = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
     }
-  
+
     // Calculate conversation duration
     const conversationDurationMs = new Date(lastMessageAt).getTime() - new Date(room.createdAt).getTime();
-  
+
     return reply.send({
       totalMessages,
       messagesPerAgent,
@@ -384,7 +353,7 @@ const roomsPlugin: FastifyPluginAsync = async (fastify) => {
       lastMessageAt,
     });
   });
-  
+
   // GET /rooms/:id/messages — paginated message history
   fastify.get<{
     Params: { id: string };
@@ -395,23 +364,19 @@ const roomsPlugin: FastifyPluginAsync = async (fastify) => {
 
     const client = await getDb();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const roomRows: unknown[] = await (client.db as any)
-      .select()
-      .from(client.schema.rooms)
-      .where(eq(client.schema.rooms.id, id));
+    const roomRows = await dbSelect(client, client.schema.rooms, {
+      where: eq(client.schema.rooms.id, id),
+    });
 
     if (roomRows.length === 0) {
       return reply.status(404).send({ error: 'Room not found' });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const messages = await (client.db as any)
-      .select()
-      .from(client.schema.messages)
-      .where(eq(client.schema.messages.roomId, id))
-      .orderBy(desc(client.schema.messages.createdAt))
-      .limit(limit);
+    const messages = await dbSelect(client, client.schema.messages, {
+      where: eq(client.schema.messages.roomId, id),
+      orderBy: desc(client.schema.messages.createdAt),
+      limit,
+    });
 
     return reply.send((messages as unknown[]).reverse());
   });
@@ -420,44 +385,37 @@ const roomsPlugin: FastifyPluginAsync = async (fastify) => {
   fastify.delete<{ Params: { id: string } }>('/rooms/:id', async (req, reply) => {
     const { id } = req.params;
     const client = await getDb();
-  
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (client.db as any)
-      .delete(client.schema.rooms)
-      .where(eq(client.schema.rooms.id, id));
-  
+
+    await dbDelete(client, client.schema.rooms, eq(client.schema.rooms.id, id));
+
     return reply.status(204).send();
   });
-  
+
   // ─── Message Reactions ──────────────────────────────────────────────────────
-  
+
   // GET /rooms/:roomId/messages/:messageId/reactions — Get all reactions for a message
   fastify.get<{ Params: { roomId: string; messageId: string } }>('/rooms/:roomId/messages/:messageId/reactions', async (req, reply) => {
     const { messageId } = req.params;
     const client = await getDb();
-  
+
     // Verify message exists
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const messageRows: unknown[] = await (client.db as any)
-      .select()
-      .from(client.schema.messages)
-      .where(eq(client.schema.messages.id, messageId));
-  
+    const messageRows = await dbSelect(client, client.schema.messages, {
+      where: eq(client.schema.messages.id, messageId),
+    });
+
     if (messageRows.length === 0) {
       return reply.status(404).send({ error: 'Message not found' });
     }
-  
+
     // Get all reactions for the message
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const reactions: unknown[] = await (client.db as any)
-      .select()
-      .from(client.schema.messageReactions)
-      .where(eq(client.schema.messageReactions.messageId, messageId))
-      .orderBy(desc(client.schema.messageReactions.createdAt));
-  
+    const reactions = await dbSelect(client, client.schema.messageReactions, {
+      where: eq(client.schema.messageReactions.messageId, messageId),
+      orderBy: desc(client.schema.messageReactions.createdAt),
+    });
+
     return reply.send(reactions);
   });
-  
+
   // POST /rooms/:roomId/messages/:messageId/reactions — Add a reaction
   fastify.post<{
     Params: { roomId: string; messageId: string };
@@ -466,151 +424,125 @@ const roomsPlugin: FastifyPluginAsync = async (fastify) => {
     const { messageId } = req.params;
     const { emoji, userId } = req.body;
     const client = await getDb();
-  
+
     // Verify message exists
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const messageRows: unknown[] = await (client.db as any)
-      .select()
-      .from(client.schema.messages)
-      .where(eq(client.schema.messages.id, messageId));
-  
+    const messageRows = await dbSelect(client, client.schema.messages, {
+      where: eq(client.schema.messages.id, messageId),
+    });
+
     if (messageRows.length === 0) {
       return reply.status(404).send({ error: 'Message not found' });
     }
-  
+
     const id = randomUUID();
     const now = new Date();
-  
-    const row = {
+
+    await dbInsert(client, client.schema.messageReactions, {
       id,
       messageId,
       userId,
       emoji,
-      createdAt: client.dialect === 'sqlite' ? now.toISOString() : now,
-    };
-  
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (client.db as any).insert(client.schema.messageReactions).values(row);
-  
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rows: unknown[] = await (client.db as any)
-      .select()
-      .from(client.schema.messageReactions)
-      .where(eq(client.schema.messageReactions.id, id));
-  
+      createdAt: dialectDate(client, now),
+    } as any);
+
+    const rows = await dbSelect(client, client.schema.messageReactions, {
+      where: eq(client.schema.messageReactions.id, id),
+    });
+
     return reply.status(201).send(rows[0]);
   });
-  
+
   // DELETE /rooms/:roomId/messages/:messageId/reactions/:reactionId — Remove a reaction
   fastify.delete<{ Params: { roomId: string; messageId: string; reactionId: string } }>(
     '/rooms/:roomId/messages/:messageId/reactions/:reactionId',
     async (req, reply) => {
       const { messageId, reactionId } = req.params;
       const client = await getDb();
-  
+
       // Verify reaction exists and belongs to the message
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const reactionRows: unknown[] = await (client.db as any)
-        .select()
-        .from(client.schema.messageReactions)
-        .where(
-          and(
-            eq(client.schema.messageReactions.id, reactionId),
-            eq(client.schema.messageReactions.messageId, messageId),
-          ),
-        );
-  
+      const reactionRows = await dbSelect(client, client.schema.messageReactions, {
+        where: and(
+          eq(client.schema.messageReactions.id, reactionId),
+          eq(client.schema.messageReactions.messageId, messageId),
+        ),
+      });
+
       if (reactionRows.length === 0) {
         return reply.status(404).send({ error: 'Reaction not found' });
       }
-  
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (client.db as any)
-        .delete(client.schema.messageReactions)
-        .where(eq(client.schema.messageReactions.id, reactionId));
-  
+
+      await dbDelete(client, client.schema.messageReactions, eq(client.schema.messageReactions.id, reactionId));
+
       return reply.status(204).send();
-      },
-    );
-    
-    // ─── Scheduled Rooms ──────────────────────────────────────────────────────
-    
-    // GET /rooms/:roomId/schedule — Get room schedule
-    fastify.get<{ Params: { roomId: string } }>('/rooms/:roomId/schedule', async (req, reply) => {
-      const { roomId } = req.params;
-      const client = await getDb();
-    
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const schedules: unknown[] = await (client.db as any)
-        .select()
-        .from(client.schema.scheduledRooms)
-        .where(eq(client.schema.scheduledRooms.roomId, roomId));
-    
-      if (schedules.length === 0) {
-        return reply.status(404).send({ error: 'Schedule not found' });
-      }
-    
-      return reply.send(schedules[0]);
+    },
+  );
+
+  // ─── Scheduled Rooms ──────────────────────────────────────────────────────
+
+  // GET /rooms/:roomId/schedule — Get room schedule
+  fastify.get<{ Params: { roomId: string } }>('/rooms/:roomId/schedule', async (req, reply) => {
+    const { roomId } = req.params;
+    const client = await getDb();
+
+    const schedules = await dbSelect(client, client.schema.scheduledRooms, {
+      where: eq(client.schema.scheduledRooms.roomId, roomId),
     });
-    
-    // POST /rooms/:roomId/schedule — Create/update schedule
-    fastify.post<{
-      Params: { roomId: string };
-      Body: { cronExpression: string; timezone?: string };
-    }>('/rooms/:roomId/schedule', async (req, reply) => {
-      const { roomId } = req.params;
-      const { cronExpression, timezone = 'UTC' } = req.body;
-      const client = await getDb();
-    
-      // Verify room exists
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const roomRows: unknown[] = await (client.db as any)
-        .select()
-        .from(client.schema.rooms)
-        .where(eq(client.schema.rooms.id, roomId));
-    
-      if (roomRows.length === 0) {
-        return reply.status(404).send({ error: 'Room not found' });
-      }
-    
-      const id = randomUUID();
-      const now = new Date();
-    
-      const row = {
-        id,
-        roomId,
-        cronExpression,
-        timezone,
-        isActive: 1,
-        lastRun: null,
-        nextRun: null,
-        createdAt: client.dialect === 'sqlite' ? now.toISOString() : now,
-      };
-    
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (client.db as any).insert(client.schema.scheduledRooms).values(row);
-    
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const rows: unknown[] = await (client.db as any)
-        .select()
-        .from(client.schema.scheduledRooms)
-        .where(eq(client.schema.scheduledRooms.id, id));
-    
-      return reply.status(201).send(rows[0]);
+
+    if (schedules.length === 0) {
+      return reply.status(404).send({ error: 'Schedule not found' });
+    }
+
+    return reply.send(schedules[0]);
+  });
+
+  // POST /rooms/:roomId/schedule — Create/update schedule
+  fastify.post<{
+    Params: { roomId: string };
+    Body: { cronExpression: string; timezone?: string };
+  }>('/rooms/:roomId/schedule', async (req, reply) => {
+    const { roomId } = req.params;
+    const { cronExpression, timezone = 'UTC' } = req.body;
+    const client = await getDb();
+
+    // Verify room exists
+    const roomRows = await dbSelect(client, client.schema.rooms, {
+      where: eq(client.schema.rooms.id, roomId),
     });
-    
-    // DELETE /rooms/:roomId/schedule — Delete schedule
-    fastify.delete<{ Params: { roomId: string } }>('/rooms/:roomId/schedule', async (req, reply) => {
-      const { roomId } = req.params;
-      const client = await getDb();
-    
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (client.db as any)
-        .delete(client.schema.scheduledRooms)
-        .where(eq(client.schema.scheduledRooms.roomId, roomId));
-    
-      return reply.status(204).send();
+
+    if (roomRows.length === 0) {
+      return reply.status(404).send({ error: 'Room not found' });
+    }
+
+    const id = randomUUID();
+    const now = new Date();
+
+    await dbInsert(client, client.schema.scheduledRooms, {
+      id,
+      roomId,
+      cronExpression,
+      timezone,
+      isActive: 1,
+      lastRun: null,
+      nextRun: null,
+      createdAt: dialectDate(client, now),
+    } as any);
+
+    const rows = await dbSelect(client, client.schema.scheduledRooms, {
+      where: eq(client.schema.scheduledRooms.id, id),
     });
-    };
+
+    return reply.status(201).send(rows[0]);
+  });
+
+  // DELETE /rooms/:roomId/schedule — Delete schedule
+  fastify.delete<{ Params: { roomId: string } }>('/rooms/:roomId/schedule', async (req, reply) => {
+    const { roomId } = req.params;
+    const client = await getDb();
+
+    await dbDelete(client, client.schema.scheduledRooms, eq(client.schema.scheduledRooms.roomId, roomId));
+
+    return reply.status(204).send();
+  });
+};
 
 export default roomsPlugin;

@@ -1,115 +1,90 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { getDb } from '../db/index.js';
-import { eq } from 'drizzle-orm';
 import { hashPassword, verifyPassword } from '../utils/password.js';
+import { dbSelect, dbUpdate, dbUpdateReturning, dbDelete, eq } from '../db/db-helpers.js';
+import { requireAdmin } from './middleware.js';
 
 const usersPlugin: FastifyPluginAsync = async (fastify) => {
   // GET /users - list all users (admin only)
-  fastify.get('/users', async (req, reply) => {
-    try {
-      const payload = await req.jwtVerify<{ userId: string; role?: string }>();
+  fastify.get('/users', { preHandler: [requireAdmin] }, async (_req, reply) => {
+    const client = await getDb();
+    const users = await dbSelect(client, client.schema.users);
 
-      // Check admin role
-      if (payload.role !== 'admin') {
-        return reply.status(403).send({ error: 'Admin access required' });
-      }
-
-      const client = await getDb();
-      const users = await (client.db as any)
-        .select()
-        .from(client.schema.users);
-
-      return reply.send(
-        users.map((user: any) => ({
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          role: user.role,
-          createdAt: user.createdAt,
-          lastLoginAt: user.lastLoginAt,
-          firstLogin: user.firstLogin === 1,
-        }))
-      );
-    } catch {
-      return reply.status(401).send({ error: 'Unauthorized' });
-    }
+    return reply.send(
+      users.map((user) => ({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt,
+        lastLoginAt: user.lastLoginAt,
+        firstLogin: user.firstLogin === 1,
+      }))
+    );
   });
 
   // PATCH /users/:id - update user role (admin only)
   fastify.patch<{ Params: { id: string }; Body: { role: 'admin' | 'user' } }>(
     '/users/:id',
+    { preHandler: [requireAdmin] },
     async (req, reply) => {
-      try {
-        const payload = await req.jwtVerify<{ userId: string; role?: string }>();
-
-        // Check admin role
-        if (payload.role !== 'admin') {
-          return reply.status(403).send({ error: 'Admin access required' });
-        }
-
-        const { id } = req.params;
-        const { role } = req.body;
-
-        if (!role || (role !== 'admin' && role !== 'user')) {
-          return reply.status(400).send({ error: 'Invalid role' });
-        }
-
-        const client = await getDb();
-        const [user] = await (client.db as any)
-          .update(client.schema.users)
-          .set({ role })
-          .where(eq(client.schema.users.id, id))
-          .returning();
-
-        if (!user) {
-          return reply.status(404).send({ error: 'User not found' });
-        }
-
-        return reply.send({
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          role: user.role,
-          createdAt: user.createdAt,
-        });
-      } catch {
-        return reply.status(401).send({ error: 'Unauthorized' });
-      }
-    }
-  );
-
-  // DELETE /users/:id - delete user (admin only)
-  fastify.delete<{ Params: { id: string } }>('/users/:id', async (req, reply) => {
-    try {
-      const payload = await req.jwtVerify<{ userId: string; role?: string }>();
-
-      // Check admin role
-      if (payload.role !== 'admin') {
-        return reply.status(403).send({ error: 'Admin access required' });
-      }
-
       const { id } = req.params;
+      const { role } = req.body;
 
-      // Prevent self-deletion
-      if (id === payload.userId) {
-        return reply.status(400).send({ error: 'Cannot delete yourself' });
+      if (!role || (role !== 'admin' && role !== 'user')) {
+        return reply.status(400).send({ error: 'Invalid role' });
       }
 
       const client = await getDb();
-      const [user] = await (client.db as any)
-        .delete(client.schema.users)
-        .where(eq(client.schema.users.id, id))
-        .returning();
+      const [user] = await dbUpdateReturning(
+        client,
+        client.schema.users,
+        { role },
+        eq(client.schema.users.id, id),
+      ) as any;
 
       if (!user) {
         return reply.status(404).send({ error: 'User not found' });
       }
 
-      return reply.status(204).send();
-    } catch {
-      return reply.status(401).send({ error: 'Unauthorized' });
+      return reply.send({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt,
+      });
     }
-  });
+  );
+
+  // DELETE /users/:id - delete user (admin only)
+  fastify.delete<{ Params: { id: string } }>(
+    '/users/:id',
+    { preHandler: [requireAdmin] },
+    async (req, reply) => {
+      const { id } = req.params;
+      const userId = (req as any).userId as string;
+
+      // Prevent self-deletion
+      if (id === userId) {
+        return reply.status(400).send({ error: 'Cannot delete yourself' });
+      }
+
+      const client = await getDb();
+      const existing = await dbSelect(client, client.schema.users, {
+        where: eq(client.schema.users.id, id),
+        limit: 1,
+      });
+
+      if (existing.length === 0) {
+        return reply.status(404).send({ error: 'User not found' });
+      }
+
+      await dbDelete(client, client.schema.users, eq(client.schema.users.id, id));
+
+      return reply.status(204).send();
+    }
+  );
 
   // POST /users/me/password - Change password (requires current password)
   fastify.post<{ Body: { currentPassword: string; newPassword: string } }>(
@@ -128,11 +103,10 @@ const usersPlugin: FastifyPluginAsync = async (fastify) => {
         }
 
         const client = await getDb();
-        const users = await (client.db as any)
-          .select()
-          .from(client.schema.users)
-          .where(eq(client.schema.users.id, payload.userId))
-          .limit(1);
+        const users = await dbSelect(client, client.schema.users, {
+          where: eq(client.schema.users.id, payload.userId),
+          limit: 1,
+        });
 
         const user = users[0];
         if (!user) {
@@ -146,10 +120,12 @@ const usersPlugin: FastifyPluginAsync = async (fastify) => {
         }
 
         const passwordHash = await hashPassword(newPassword);
-        await (client.db as any)
-          .update(client.schema.users)
-          .set({ passwordHash })
-          .where(eq(client.schema.users.id, payload.userId));
+        await dbUpdate(
+          client,
+          client.schema.users,
+          { passwordHash },
+          eq(client.schema.users.id, payload.userId),
+        );
 
         return reply.send({ success: true, message: 'Password changed successfully' });
       } catch {
@@ -177,21 +153,22 @@ const usersPlugin: FastifyPluginAsync = async (fastify) => {
         const client = await getDb();
 
         // Check if username is already taken
-        const existingUsers = await (client.db as any)
-          .select()
-          .from(client.schema.users)
-          .where(eq(client.schema.users.username, username))
-          .limit(1);
+        const existingUsers = await dbSelect(client, client.schema.users, {
+          where: eq(client.schema.users.username, username),
+          limit: 1,
+        });
 
         // Allow if it's the same user
-        if (existingUsers.length > 0 && existingUsers[0].id !== payload.userId) {
+        if (existingUsers.length > 0 && existingUsers[0]!.id !== payload.userId) {
           return reply.status(400).send({ error: 'Username is already taken' });
         }
 
-        await (client.db as any)
-          .update(client.schema.users)
-          .set({ username })
-          .where(eq(client.schema.users.id, payload.userId));
+        await dbUpdate(
+          client,
+          client.schema.users,
+          { username },
+          eq(client.schema.users.id, payload.userId),
+        );
 
         return reply.send({ success: true, message: 'Username changed successfully' });
       } catch {

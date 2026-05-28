@@ -1,5 +1,6 @@
 import type { Agent } from '@agentroom/shared';
 import { getDb } from '../db/index.js';
+import { dbSelect } from '../db/db-helpers.js';
 
 export interface LlmMessage {
   role: 'system' | 'user' | 'assistant';
@@ -31,10 +32,7 @@ export async function resolveLlmCredentials(
 
   // Fallback to global settings
   const client = await getDb();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const records = await (client.db as any)
-    .select({ key: client.schema.settings.key, value: client.schema.settings.value })
-    .from(client.schema.settings);
+  const records = await dbSelect(client, client.schema.settings);
 
   const globalSettings: Record<string, string> = {};
   for (const r of records) {

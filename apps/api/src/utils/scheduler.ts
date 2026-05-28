@@ -3,8 +3,8 @@
  * Checks every minute if any scheduled room should be activated.
  */
 
-import { eq } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
+import { dbSelect, dbUpdate, eq } from '../db/db-helpers.js';
 
 export interface ScheduledRoomTask {
   id: string;
@@ -94,11 +94,9 @@ export class RoomScheduler {
       const now = new Date();
 
       // Get all active scheduled rooms
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const scheduledRooms: any[] = await (client.db as any)
-        .select()
-        .from(client.schema.scheduledRooms)
-        .where(eq(client.schema.scheduledRooms.isActive, 1));
+      const scheduledRooms = await dbSelect(client, client.schema.scheduledRooms, {
+        where: eq(client.schema.scheduledRooms.isActive, 1),
+      });
 
       for (const room of scheduledRooms) {
         try {
@@ -107,23 +105,23 @@ export class RoomScheduler {
             console.log(`[Scheduler] Activating scheduled room: ${room.roomId}`);
 
             // Activate the room (set status to 'running')
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (client.db as any)
-              .update(client.schema.rooms)
-              .set({ status: 'running' })
-              .where(eq(client.schema.rooms.id, room.roomId));
+            await dbUpdate(client, client.schema.rooms, { status: 'running' }, eq(client.schema.rooms.id, room.roomId));
 
             // Update lastRun and nextRun
             const nextRun = getNextCronTime(room.cronExpression, now);
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (client.db as any)
-              .update(client.schema.scheduledRooms)
-              .set({
+            // Cast is needed because SQLite uses string dates, PG uses Date objects.
+            // The schema union type can't represent this difference statically.
+            await dbUpdate(
+              client,
+              client.schema.scheduledRooms,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              {
                 lastRun: client.dialect === 'sqlite' ? now.toISOString() : now,
                 nextRun: client.dialect === 'sqlite' ? nextRun.toISOString() : nextRun,
-              })
-              .where(eq(client.schema.scheduledRooms.id, room.id));
+              } as any,
+              eq(client.schema.scheduledRooms.id, room.id),
+            );
           }
         } catch (error) {
           console.error(`[Scheduler] Error processing room ${room.roomId}:`, error);

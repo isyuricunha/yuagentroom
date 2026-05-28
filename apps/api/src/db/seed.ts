@@ -4,8 +4,8 @@
  */
 
 import { randomUUID } from 'crypto';
-import { eq } from 'drizzle-orm';
 import { getDb } from './index.js';
+import { dbSelect, dbInsert, eq, dialectDate } from './db-helpers.js';
 
 export interface AgentTemplateSeed {
   name: string;
@@ -127,15 +127,13 @@ export async function seedAgentTemplates(): Promise<void> {
     const now = new Date();
     
     // Check if template already exists
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const existing: unknown[] = await (client.db as any)
-      .select()
-      .from(client.schema.agentTemplates)
-      .where(eq(client.schema.agentTemplates.name, template.name));
+    const existing = await dbSelect(client, client.schema.agentTemplates, {
+      where: eq(client.schema.agentTemplates.name, template.name),
+    });
     
     if (existing.length === 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (client.db as any).insert(client.schema.agentTemplates).values({
+      // Cast needed: createdAt is string for SQLite, Date for PG
+      await dbInsert(client, client.schema.agentTemplates, {
         id,
         name: template.name,
         description: template.description,
@@ -144,8 +142,9 @@ export async function seedAgentTemplates(): Promise<void> {
         temperature: template.temperature,
         maxTokens: template.maxTokens,
         isDefault: template.isDefault ? 1 : 0,
-        createdAt: client.dialect === 'sqlite' ? now.toISOString() : now,
-      });
+        createdAt: dialectDate(client, now),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any);
       console.log(`Seeded agent template: ${template.name}`);
     }
   }
@@ -159,23 +158,21 @@ export async function seedRoomTemplates(): Promise<void> {
     const now = new Date();
     
     // Check if template already exists
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const existing: unknown[] = await (client.db as any)
-      .select()
-      .from(client.schema.roomTemplates)
-      .where(eq(client.schema.roomTemplates.name, template.name));
+    const existing = await dbSelect(client, client.schema.roomTemplates, {
+      where: eq(client.schema.roomTemplates.name, template.name),
+    });
     
     if (existing.length === 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (client.db as any).insert(client.schema.roomTemplates).values({
+      await dbInsert(client, client.schema.roomTemplates, {
         id,
         name: template.name,
         description: template.description,
         configJson: template.configJson,
         agentConfigsJson: template.agentConfigsJson,
         isDefault: template.isDefault ? 1 : 0,
-        createdAt: client.dialect === 'sqlite' ? now.toISOString() : now,
-      });
+        createdAt: dialectDate(client, now),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any);
       console.log(`Seeded room template: ${template.name}`);
     }
   }

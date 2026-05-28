@@ -1,8 +1,8 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { getDb } from '../db/index.js';
-import { eq } from 'drizzle-orm';
 import { readEnv } from '../utils/env.js';
 import { hashPassword, verifyPassword } from '../utils/password.js';
+import { dbSelect, dbInsertReturning, dbUpdate, eq, dialectDate } from '../db/db-helpers.js';
 
 // Rate limiting store for auth attempts
 const loginAttempts = new Map<string, { count: number; firstAttempt: number }>();
@@ -90,21 +90,19 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
 
     const client = await getDb();
 
-    const users = await (client.db as any)
-      .select()
-      .from(client.schema.users)
-      .where(eq(client.schema.users.username, identifier))
-      .limit(1);
+    let users = await dbSelect(client, client.schema.users, {
+      where: eq(client.schema.users.username, identifier),
+      limit: 1,
+    });
 
     let user = users[0];
 
     // Try email if username not found
     if (!user) {
-      const emailUsers = await (client.db as any)
-        .select()
-        .from(client.schema.users)
-        .where(eq(client.schema.users.email, identifier))
-        .limit(1);
+      const emailUsers = await dbSelect(client, client.schema.users, {
+        where: eq(client.schema.users.email, identifier),
+        limit: 1,
+      });
       user = emailUsers[0];
     }
 
@@ -113,12 +111,14 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
       return reply.status(401).send({ error: 'Invalid credentials' });
     }
 
-  // Update last login
-  const now = new Date();
-  await (client.db as any)
-    .update(client.schema.users)
-    .set({ lastLoginAt: client.dialect === 'sqlite' ? now.toISOString() : now })
-      .where(eq(client.schema.users.id, user.id));
+    // Update last login
+    const now = new Date();
+    await dbUpdate(
+      client,
+      client.schema.users,
+      { lastLoginAt: client.dialect === 'sqlite' ? now.toISOString() : now } as any,
+      eq(client.schema.users.id, user.id),
+    );
 
     // Record successful login
     recordLoginAttempt(identifier, true);
@@ -171,28 +171,22 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
     const client = await getDb();
 
     // Check if any users exist (first user becomes admin)
-    const existingUsers = await (client.db as any)
-      .select()
-      .from(client.schema.users)
-      .limit(1);
+    const existingUsers = await dbSelect(client, client.schema.users, { limit: 1 });
     const isFirstUser = existingUsers.length === 0;
 
-  const passwordHash = await hashPassword(password);
-  const now = new Date();
-  const userId = crypto.randomUUID();
+    const passwordHash = await hashPassword(password);
+    const now = new Date();
+    const userId = crypto.randomUUID();
 
-  const [user] = await (client.db as any)
-    .insert(client.schema.users)
-    .values({
+    const [user] = await dbInsertReturning(client, client.schema.users, {
       id: userId,
       username,
       email,
       passwordHash,
       role: isFirstUser ? 'admin' : 'user',
-      createdAt: client.dialect === 'sqlite' ? now.toISOString() : now,
-        firstLogin: 1, // First login is always required
-      })
-      .returning();
+      createdAt: dialectDate(client, now),
+      firstLogin: 1,
+    } as any) as any;
 
     const token = fastify.jwt.sign(
       { userId: user.id, role: user.role },
@@ -223,11 +217,10 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
       const payload = await req.jwtVerify<{ userId: string; role?: string }>();
 
       const client = await getDb();
-      const users = await (client.db as any)
-        .select()
-        .from(client.schema.users)
-        .where(eq(client.schema.users.id, payload.userId))
-        .limit(1);
+      const users = await dbSelect(client, client.schema.users, {
+        where: eq(client.schema.users.id, payload.userId),
+        limit: 1,
+      });
 
       const user = users[0];
       if (!user) {
@@ -253,10 +246,7 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
   // GET /auth/status - Get auth status (simplified - no more legacy mode)
   fastify.get('/auth/status', async (_req, reply) => {
     const client = await getDb();
-    const userCount = await (client.db as any)
-      .select()
-      .from(client.schema.users)
-      .limit(1);
+    const userCount = await dbSelect(client, client.schema.users, { limit: 1 });
     const hasUsers = userCount.length > 0;
 
     return reply.send({
@@ -289,11 +279,10 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
       }
 
       const client = await getDb();
-      const users = await (client.db as any)
-        .select()
-        .from(client.schema.users)
-        .where(eq(client.schema.users.id, payload.userId))
-        .limit(1);
+      const users = await dbSelect(client, client.schema.users, {
+        where: eq(client.schema.users.id, payload.userId),
+        limit: 1,
+      });
 
       const user = users[0];
       if (!user) {
@@ -305,17 +294,19 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
         return reply.status(400).send({ error: 'This endpoint is only for first login password change' });
       }
 
-  const passwordHash = await hashPassword(newPassword);
-  const now = new Date();
+      const passwordHash = await hashPassword(newPassword);
+      const now = new Date();
 
-  await (client.db as any)
-    .update(client.schema.users)
-    .set({
-      passwordHash,
-      firstLogin: 0,
-      firstLoginAt: client.dialect === 'sqlite' ? now.toISOString() : now,
-        })
-        .where(eq(client.schema.users.id, payload.userId));
+      await dbUpdate(
+        client,
+        client.schema.users,
+        {
+          passwordHash,
+          firstLogin: 0,
+          firstLoginAt: client.dialect === 'sqlite' ? now.toISOString() : now,
+        } as any,
+        eq(client.schema.users.id, payload.userId),
+      );
 
       return reply.send({ success: true, message: 'Password changed successfully' });
     } catch {

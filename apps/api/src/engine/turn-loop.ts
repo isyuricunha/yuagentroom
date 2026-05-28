@@ -1,10 +1,10 @@
 import { randomUUID } from 'crypto';
-import { eq, and, isNull } from 'drizzle-orm';
 import type { Agent, Message, Room } from '@agentroom/shared';
 import { getDb } from '../db/index.js';
 import { callLlm, resolveAgentCredentials } from '../utils/llm.js';
 import { pickNextSpeaker } from './moderator.js';
 import { buildContext } from './context-manager.js';
+import { dbSelect, dbInsert, dbUpdate, eq, and, isNull, asc, dialectDate } from '../db/db-helpers.js';
 
 export type BroadcastFn = (roomId: string, payload: unknown) => void;
 
@@ -53,16 +53,16 @@ export class TurnLoop {
       const client = await getDb();
 
       // Fetch active agents in the room
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const roomAgentRows: Array<{ agentId: string }> = await (client.db as any)
-        .select({ agentId: client.schema.roomAgents.agentId })
-        .from(client.schema.roomAgents)
-        .where(
-          and(
+      const roomAgentRows = await dbSelect(
+        client,
+        client.schema.roomAgents,
+        {
+          where: and(
             eq(client.schema.roomAgents.roomId, room.id),
             isNull(client.schema.roomAgents.leftAt),
           ),
-        );
+        },
+      ) as Array<{ agentId: string }>;
 
       if (roomAgentRows.length === 0) {
         // No agents — pause and wait
@@ -73,12 +73,11 @@ export class TurnLoop {
       const agents: Agent[] = (
         await Promise.all(
           roomAgentRows.map(async ({ agentId }) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const rows: Agent[] = await (client.db as any)
-              .select()
-              .from(client.schema.agents)
-              .where(eq(client.schema.agents.id, agentId));
-            return rows[0];
+            const rows = await dbSelect(client, client.schema.agents, {
+              where: eq(client.schema.agents.id, agentId),
+              limit: 1,
+            });
+            return rows[0] as Agent | undefined;
           }),
         )
       ).filter((a): a is Agent => a !== undefined);
@@ -89,12 +88,14 @@ export class TurnLoop {
       }
 
       // Fetch message history
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const history: Message[] = await (client.db as any)
-        .select()
-        .from(client.schema.messages)
-        .where(eq(client.schema.messages.roomId, room.id))
-        .orderBy(client.schema.messages.createdAt);
+      const history = await dbSelect(
+        client,
+        client.schema.messages,
+        {
+          where: eq(client.schema.messages.roomId, room.id),
+          orderBy: asc(client.schema.messages.createdAt),
+        },
+      ) as Message[];
 
       // Pick the moderator agent (first agent acts as moderator for now)
       const moderatorAgent = agents[0]!;
@@ -144,28 +145,28 @@ export class TurnLoop {
         room.topic
       );
 
-// Call the agent's LLM with fallback to global credentials
-       let responseContent: string;
-       try {
-         const creds = await resolveAgentCredentials(currentAgent);
-         if (!creds) {
-           throw new Error('No LLM credentials available. Configure agent credentials or set global settings.');
-         }
-         const { content } = await callLlm(
-           creds.providerUrl,
-           creds.apiKey,
-           currentAgent.model,
-           contextMessages,
-           currentAgent.reasoningEffort
-         );
-         responseContent = content;
-       } catch (err) {
-         console.error(`[TurnLoop] LLM call failed for agent ${currentAgent.name}:`, err);
-         // Update index so next iteration skips this agent
-         this.lastSpeakerIndex = (this.lastSpeakerIndex + 1) % agents.length;
-         await sleep(room.turnDelayMs);
-         continue;
-       }
+      // Call the agent's LLM with fallback to global credentials
+      let responseContent: string;
+      try {
+        const creds = await resolveAgentCredentials(currentAgent);
+        if (!creds) {
+          throw new Error('No LLM credentials available. Configure agent credentials or set global settings.');
+        }
+        const { content } = await callLlm(
+          creds.providerUrl,
+          creds.apiKey,
+          currentAgent.model,
+          contextMessages,
+          currentAgent.reasoningEffort
+        );
+        responseContent = content;
+      } catch (err) {
+        console.error(`[TurnLoop] LLM call failed for agent ${currentAgent.name}:`, err);
+        // Update index so next iteration skips this agent
+        this.lastSpeakerIndex = (this.lastSpeakerIndex + 1) % agents.length;
+        await sleep(room.turnDelayMs);
+        continue;
+      }
 
       // Save message to DB
       const msgId = randomUUID();
@@ -176,11 +177,10 @@ export class TurnLoop {
         agentId: currentAgent.id || null,
         role: 'agent' as const,
         content: responseContent,
-        createdAt: client.dialect === 'sqlite' ? now.toISOString() : now,
+        createdAt: dialectDate(client, now),
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (client.db as any).insert(client.schema.messages).values(msgRow);
+      await dbInsert(client, client.schema.messages, msgRow as any);
 
       // Broadcast new message
       const savedMessage: Message = {
@@ -209,11 +209,7 @@ export class TurnLoop {
     // Update room status in DB
     const client = await getDb();
     const newStatus = this.pausing ? 'paused' : 'idle';
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (client.db as any)
-      .update(client.schema.rooms)
-      .set({ status: newStatus })
-      .where(eq(client.schema.rooms.id, this.options.room.id));
+    await dbUpdate(client, client.schema.rooms, { status: newStatus }, eq(client.schema.rooms.id, this.options.room.id));
 
     broadcast(this.options.room.id, {
       type: 'room:status',

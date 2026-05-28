@@ -1,12 +1,11 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { randomUUID } from 'crypto';
-import { eq, desc } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
+import { dbSelect, dbInsert, dbUpdate, dbDelete, eq, desc, dialectDate } from '../db/db-helpers.js';
 
 async function getGlobalSettings() {
   const client = await getDb();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const records: { key: string; value: string }[] = await (client.db as any).select().from(client.schema.settings);
+  const records = await dbSelect(client, client.schema.settings);
   const settings: Record<string, string> = {};
   for (const record of records) {
     settings[record.key] = record.value;
@@ -18,120 +17,103 @@ const agentsPlugin: FastifyPluginAsync = async (fastify) => {
   // GET /agents — list all agents
   fastify.get('/agents', async (_req, reply) => {
     const client = await getDb();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const agents: unknown[] = await (client.db as any)
-      .select()
-      .from(client.schema.agents)
-      .orderBy(client.schema.agents.createdAt);
+    const agents = await dbSelect(client, client.schema.agents, {
+      orderBy: desc(client.schema.agents.createdAt),
+    });
     return reply.send(agents);
   });
 
   // POST /agents — create agent
   fastify.post<{
-  Body: {
-  name: string;
-  systemPrompt: string;
-  model: string;
-  };
+    Body: {
+      name: string;
+      systemPrompt: string;
+      model: string;
+    };
   }>('/agents', async (req, reply) => {
-  const { name, systemPrompt, model } = req.body;
-  
-  if (!name || !systemPrompt || !model) {
-  return reply.status(400).send({ error: 'Missing required fields: name, systemPrompt, model' });
-  }
-  
-  // Get global settings for provider URL and API key
-  const settings = await getGlobalSettings();
-  const globalProviderUrl = settings.global_provider_url || '';
-  const globalApiKey = settings.global_api_key || '';
-  
-  const client = await getDb();
-  const id = randomUUID();
-  const now = new Date();
-  
-  const row = {
-  id,
-  name,
-  systemPrompt,
-  model,
-  reasoningEffort: 'none',
-  providerUrl: globalProviderUrl,
-  apiKey: globalApiKey,
-  createdAt: client.dialect === 'sqlite' ? now.toISOString() : now,
-  };
-  
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (client.db as any).insert(client.schema.agents).values(row);
-  
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rows = await (client.db as any)
-  .select()
-  .from(client.schema.agents)
-  .where(eq(client.schema.agents.id, id));
-  
-  return reply.status(201).send(rows[0]);
+    const { name, systemPrompt, model } = req.body;
+
+    if (!name || !systemPrompt || !model) {
+      return reply.status(400).send({ error: 'Missing required fields: name, systemPrompt, model' });
+    }
+
+    // Get global settings for provider URL and API key
+    const settings = await getGlobalSettings();
+    const globalProviderUrl = settings['global_provider_url'] || '';
+    const globalApiKey = settings['global_api_key'] || '';
+
+    const client = await getDb();
+    const id = randomUUID();
+    const now = new Date();
+
+    await dbInsert(client, client.schema.agents, {
+      id,
+      name,
+      systemPrompt,
+      model,
+      reasoningEffort: 'none',
+      providerUrl: globalProviderUrl,
+      apiKey: globalApiKey,
+      createdAt: dialectDate(client, now),
+    } as any);
+
+    const rows = await dbSelect(client, client.schema.agents, {
+      where: eq(client.schema.agents.id, id),
+    });
+
+    return reply.status(201).send(rows[0]);
   });
 
   // PATCH /agents/:id — partial update
   fastify.patch<{
-  Params: { id: string };
-  Body: {
-  name?: string;
-  systemPrompt?: string;
-  model?: string;
-  };
+    Params: { id: string };
+    Body: {
+      name?: string;
+      systemPrompt?: string;
+      model?: string;
+    };
   }>('/agents/:id', async (req, reply) => {
-  const { id } = req.params;
-  const client = await getDb();
-  
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const existing: any[] = await (client.db as any)
-  .select()
-  .from(client.schema.agents)
-  .where(eq(client.schema.agents.id, id));
-  
-  if (existing.length === 0) {
-  return reply.status(404).send({ error: 'Agent not found' });
-  }
-  
-  const updates: Record<string, any> = {};
-  const { name, systemPrompt, model } = req.body;
-  if (name !== undefined) updates['name'] = name;
-  if (systemPrompt !== undefined) updates['systemPrompt'] = systemPrompt;
-  if (model !== undefined) updates['model'] = model;
-  
-  if (Object.keys(updates).length === 0) {
-  return reply.send(existing[0]);
-  }
-  
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (client.db as any)
-  .update(client.schema.agents)
-  .set(updates)
-  .where(eq(client.schema.agents.id, id));
-  
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updated: unknown[] = await (client.db as any)
-      .select()
-      .from(client.schema.agents)
-      .where(eq(client.schema.agents.id, id));
+    const { id } = req.params;
+    const client = await getDb();
+
+    const existing = await dbSelect(client, client.schema.agents, {
+      where: eq(client.schema.agents.id, id),
+    });
+
+    if (existing.length === 0) {
+      return reply.status(404).send({ error: 'Agent not found' });
+    }
+
+    const updates: Record<string, unknown> = {};
+    const { name, systemPrompt, model } = req.body;
+    if (name !== undefined) updates['name'] = name;
+    if (systemPrompt !== undefined) updates['systemPrompt'] = systemPrompt;
+    if (model !== undefined) updates['model'] = model;
+
+    if (Object.keys(updates).length === 0) {
+      return reply.send(existing[0]);
+    }
+
+    await dbUpdate(client, client.schema.agents, updates, eq(client.schema.agents.id, id));
+
+    const updated = await dbSelect(client, client.schema.agents, {
+      where: eq(client.schema.agents.id, id),
+    });
 
     return reply.send(updated[0]);
   });
-  
+
   // GET /agents/templates — list all available templates
   fastify.get('/agents/templates', async (_req, reply) => {
     const client = await getDb();
-    
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const templates: unknown[] = await (client.db as any)
-      .select()
-      .from(client.schema.agentTemplates)
-      .orderBy(desc(client.schema.agentTemplates.isDefault));
-    
+
+    const templates = await dbSelect(client, client.schema.agentTemplates, {
+      orderBy: desc(client.schema.agentTemplates.isDefault),
+    });
+
     return reply.send(templates);
   });
-  
+
   // POST /agents/templates/:templateId/use — create agent from template
   fastify.post<{
     Params: { templateId: string };
@@ -145,77 +127,58 @@ const agentsPlugin: FastifyPluginAsync = async (fastify) => {
     const { templateId } = req.params;
     const { name, model } = req.body;
     const client = await getDb();
-  
+
     // Get template
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const templates: unknown[] = await (client.db as any)
-      .select()
-      .from(client.schema.agentTemplates)
-      .where(eq(client.schema.agentTemplates.id, templateId));
-  
+    const templates = await dbSelect(client, client.schema.agentTemplates, {
+      where: eq(client.schema.agentTemplates.id, templateId),
+    });
+
     if (templates.length === 0) {
       return reply.status(404).send({ error: 'Template not found' });
     }
-  
-    const template = templates[0] as {
-      name: string;
-      description: string;
-      systemPrompt: string;
-      model: string;
-      temperature: number;
-      maxTokens: number;
-    };
-  
+
+    const template = templates[0]!;
+
     // Get global settings for provider URL and API key
     const settings = await getGlobalSettings();
-    const globalProviderUrl = settings.global_provider_url || '';
-    const globalApiKey = settings.global_api_key || '';
-  
+    const globalProviderUrl = settings['global_provider_url'] || '';
+    const globalApiKey = settings['global_api_key'] || '';
+
     const id = randomUUID();
     const now = new Date();
-  
-    const row = {
+
+    await dbInsert(client, client.schema.agents, {
       id,
       name: name || template.name,
       systemPrompt: template.systemPrompt,
       model: model || template.model,
-      reasoningEffort: 'none' as const,
+      reasoningEffort: 'none',
       providerUrl: globalProviderUrl,
       apiKey: globalApiKey,
-      createdAt: client.dialect === 'sqlite' ? now.toISOString() : now,
-    };
-  
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (client.db as any).insert(client.schema.agents).values(row);
-  
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rows: unknown[] = await (client.db as any)
-      .select()
-      .from(client.schema.agents)
-      .where(eq(client.schema.agents.id, id));
-  
+      createdAt: dialectDate(client, now),
+    } as any);
+
+    const rows = await dbSelect(client, client.schema.agents, {
+      where: eq(client.schema.agents.id, id),
+    });
+
     return reply.status(201).send(rows[0]);
   });
-  
+
   // DELETE /agents/:id
   fastify.delete<{ Params: { id: string } }>('/agents/:id', async (req, reply) => {
     const { id } = req.params;
     const client = await getDb();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const existing: unknown[] = await (client.db as any)
-      .select()
-      .from(client.schema.agents)
-      .where(eq(client.schema.agents.id, id));
+    const existing = await dbSelect(client, client.schema.agents, {
+      where: eq(client.schema.agents.id, id),
+    });
 
     if (existing.length === 0) {
       return reply.status(404).send({ error: 'Agent not found' });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (client.db as any)
-      .delete(client.schema.agents)
-      .where(eq(client.schema.agents.id, id));
+    await dbDelete(client, client.schema.agents, eq(client.schema.agents.id, id));
 
     return reply.status(204).send();
   });

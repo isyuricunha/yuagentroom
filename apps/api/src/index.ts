@@ -14,6 +14,8 @@ import authPlugin from './routes/auth.js';
 import usersPlugin from './routes/users.js';
 import { createWsHandler, broadcast } from './ws/handler.js';
 import { getRoomRunner } from './engine/room-runner.js';
+import { roomScheduler } from './utils/scheduler.js';
+import { seed } from './db/seed.js';
 
 // Load .env from project root
 const __filename = fileURLToPath(import.meta.url);
@@ -24,12 +26,10 @@ config({ path: join(__dirname, '../../../.env') });
 const webDistPath = join(__dirname, '../../web/dist');
 
 import { hashPassword } from './utils/password.js';
+import { dbSelect, dbInsert } from './db/db-helpers.js';
 
 async function createDefaultAdminUser(dbClient: Awaited<ReturnType<typeof getDb>>): Promise<void> {
-  const existingUsers = await (dbClient.db as any)
-    .select()
-    .from(dbClient.schema.users)
-    .limit(1);
+  const existingUsers = await dbSelect(dbClient, dbClient.schema.users, { limit: 1 });
 
   if (existingUsers.length > 0) {
     return; // Users already exist
@@ -40,17 +40,16 @@ async function createDefaultAdminUser(dbClient: Awaited<ReturnType<typeof getDb>
   const now = new Date();
   const adminId = crypto.randomUUID();
 
-  await (dbClient.db as any)
-    .insert(dbClient.schema.users)
-    .values({
-      id: adminId,
-      username: 'admin',
-      email: 'admin@localhost',
-      passwordHash: adminPasswordHash,
-      role: 'admin',
-      createdAt: dbClient.dialect === 'sqlite' ? now.toISOString() : now,
-      firstLogin: 1, // Require first login password change
-    });
+  await dbInsert(dbClient, dbClient.schema.users, {
+    id: adminId,
+    username: 'admin',
+    email: 'admin@localhost',
+    passwordHash: adminPasswordHash,
+    role: 'admin',
+    // SQLite uses string dates, PG uses Date objects
+    createdAt: dbClient.dialect === 'sqlite' ? now.toISOString() : now as any,
+    firstLogin: 1, // Require first login password change
+  });
 
   console.log('Default admin user created');
 }
@@ -64,15 +63,22 @@ async function main(): Promise<void> {
   // Create default admin user if none exists
   await createDefaultAdminUser(dbClient);
 
+  // Seed default templates
+  await seed();
+
   // Initialize the room runner with the broadcast function
   getRoomRunner(broadcast);
+
+  // Start the scheduler for scheduled rooms
+  await roomScheduler.start();
 
   // Always require auth now since we have a default admin user
   const app = Fastify({ logger: true });
 
-  // CORS — allow all origins (frontend on different port in dev)
+  // CORS — configurable origins via CORS_ORIGINS env (comma-separated), defaults to all
+  const corsOrigins = env.CORS_ORIGINS ?? '*';
   app.addHook('onRequest', async (_req, reply) => {
-    void reply.header('Access-Control-Allow-Origin', '*');
+    void reply.header('Access-Control-Allow-Origin', corsOrigins);
     void reply.header('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
     void reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   });
@@ -139,7 +145,8 @@ app.addHook('onRequest', async (req, reply) => {
   app.log.info(`AgentRoom API listening at ${address}`);
 
   // Attach WebSocket server to the underlying HTTP server
-  createWsHandler(app.server);
+  // Pass JWT verify function for WebSocket authentication
+  createWsHandler(app.server, (token: string) => app.jwt.verify(token));
 }
 
 main().catch((err: unknown) => {

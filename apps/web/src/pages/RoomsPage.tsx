@@ -253,7 +253,7 @@ export function RoomsPage() {
                 onClick={() => setSearchQuery('')}
                 style={{
                   position: 'absolute',
-                  right: '0.75rem',
+                  right: '0.5rem',
                   top: '50%',
                   transform: 'translateY(-50%)',
                   background: 'none',
@@ -262,8 +262,12 @@ export function RoomsPage() {
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  width: '2rem',
+                  height: '2rem',
+                  borderRadius: '4px',
                 }}
+                aria-label="Clear search"
               >
                 <X size={14} />
               </button>

@@ -284,7 +284,7 @@ export function RoomPage() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 1, minWidth: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             <Button
               variant="secondary"
               onClick={handleLoadAnalytics}

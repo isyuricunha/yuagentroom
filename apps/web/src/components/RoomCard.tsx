@@ -61,7 +61,15 @@ export function RoomCard({ room, onDelete, isDeleting = false }: RoomCardProps) 
         }}
       >
         {isDeleting || showDeleteConfirm ? (
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div style={{
+            display: 'flex',
+            gap: '0.5rem',
+            background: 'var(--bg-panel)',
+            padding: '0.25rem',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--border)',
+            whiteSpace: 'nowrap',
+          }}>
             <Button
               size="sm"
               variant="ghost"
@@ -123,7 +131,7 @@ export function RoomCard({ room, onDelete, isDeleting = false }: RoomCardProps) 
         aria-label={`Room: ${room.name}`}
       >
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', paddingTop: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', paddingTop: '0.5rem', paddingRight: '2.5rem' }}>
           <div
             className="room-card-icon"
             style={{

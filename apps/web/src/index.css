@@ -3245,7 +3245,7 @@ flex-wrap: wrap;
 
 /* Dashboard Notice Enhanced */
 .dashboard-notice-enhanced {
-  background: linear-gradient(135deg, rgba(201, 87, 42, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(201, 87, 42, 0.1) 0%, rgba(201, 87, 42, 0.05) 100%);
   border: 1px solid rgba(201, 87, 42, 0.2);
   border-radius: var(--radius);
   padding: 1rem 1.25rem;

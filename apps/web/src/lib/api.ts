@@ -218,7 +218,7 @@ export async function getAgentTemplates(): Promise<AgentTemplate[]> {
 export async function createAgentFromTemplate(templateId: string, input?: { name?: string; model?: string }): Promise<Agent> {
   return request<Agent>(`/agents/templates/${templateId}/use`, {
     method: 'POST',
-    body: JSON.stringify(input),
+    ...(input ? { body: JSON.stringify(input) } : {}),
   });
 }
 

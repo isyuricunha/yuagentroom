@@ -125,7 +125,7 @@ const agentsPlugin: FastifyPluginAsync = async (fastify) => {
     };
   }>('/agents/templates/:templateId/use', async (req, reply) => {
     const { templateId } = req.params;
-    const { name, model } = req.body;
+    const { name, model } = (req.body ?? {}) as { name?: string; model?: string };
     const client = await getDb();
 
     // Get template

@@ -138,9 +138,9 @@ export function SettingsPage() {
               borderRadius: 'var(--radius)',
               backgroundColor:
                 message.type === 'success'
-                  ? 'rgba(34, 197, 94, 0.1)'
-                  : 'rgba(239, 68, 68, 0.1)',
-              color: message.type === 'success' ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)',
+                  ? 'rgba(125, 154, 106, 0.1)'
+                  : 'rgba(191, 97, 106, 0.1)',
+              color: message.type === 'success' ? 'var(--success)' : 'var(--danger)',
             }}
           >
             {message.text}

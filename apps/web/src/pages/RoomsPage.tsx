@@ -207,7 +207,7 @@ export function RoomsPage() {
       {rooms.length > 0 && (
         <div className="rooms-stats-summary">
           <div className="stats-summary-card">
-            <div className="stats-summary-icon" style={{ background: 'rgba(76, 157, 243, 0.15)', color: 'var(--accent)' }}>
+            <div className="stats-summary-icon" style={{ background: 'rgba(201, 87, 42, 0.15)', color: 'var(--accent)' }}>
               <MessageSquare size={20} />
             </div>
             <div className="stats-summary-content">
@@ -318,9 +318,9 @@ export function RoomsPage() {
             <div
               className="icon"
               style={{
-                background: 'rgba(59, 130, 246, 0.1)',
+                background: 'rgba(201, 87, 42, 0.1)',
                 color: 'var(--accent)',
-                border: '1px solid rgba(59, 130, 246, 0.2)'
+                border: '1px solid rgba(201, 87, 42, 0.2)'
               }}
               aria-hidden="true"
             >

@@ -22,13 +22,13 @@ export function ThoughtChain({ thoughts }: ThoughtChainProps) {
                     background: 'none',
                     border: 'none',
                     cursor: 'pointer',
-                    color: 'var(--text-secondary, #666)',
+                    color: 'var(--text-muted)',
                     fontSize: '0.875rem',
                     padding: '0.25rem 0.5rem',
                     borderRadius: '0.25rem',
                     transition: 'background-color 0.2s ease',
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary, #f5f5f5)')}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-surface)')}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
             >
                 <span style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }}>
@@ -38,7 +38,7 @@ export function ThoughtChain({ thoughts }: ThoughtChainProps) {
             </button>
 
             {isExpanded && (
-                <div className="thought-chain-content" style={{ marginTop: '0.5rem', paddingLeft: '1rem', borderLeft: '2px solid var(--border-color, #e0e0e0)' }}>
+                <div className="thought-chain-content" style={{ marginTop: '0.5rem', paddingLeft: '1rem', borderLeft: '2px solid var(--border)' }}>
                     {thoughts.map((thought, index) => (
                         <div
                             key={index}
@@ -46,13 +46,13 @@ export function ThoughtChain({ thoughts }: ThoughtChainProps) {
                             style={{
                                 padding: '0.5rem',
                                 marginBottom: '0.5rem',
-                                backgroundColor: 'var(--bg-secondary, #f5f5f5)',
+                                backgroundColor: 'var(--bg-surface)',
                                 borderRadius: '0.25rem',
                                 fontSize: '0.875rem',
-                                color: 'var(--text-secondary, #666)',
+                                color: 'var(--text-muted)',
                             }}
                         >
-                            <div style={{ fontWeight: 600, marginBottom: '0.25rem', color: 'var(--text-heading, #333)' }}>
+                            <div style={{ fontWeight: 600, marginBottom: '0.25rem', color: 'var(--text-heading)' }}>
                                 Step {index + 1}
                             </div>
                             <div style={{ whiteSpace: 'pre-wrap' }}>{thought}</div>

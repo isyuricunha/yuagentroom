@@ -201,11 +201,11 @@ export function AgentsPage() {
         <div className="empty-state fade-in" role="status">
           <div
             className="icon"
-            style={{
-              background: 'rgba(59, 130, 246, 0.1)',
-              color: 'var(--accent)',
-              border: '1px solid rgba(59, 130, 246, 0.2)',
-            }}
+              style={{
+                background: 'rgba(201, 87, 42, 0.1)',
+                color: 'var(--accent)',
+                border: '1px solid rgba(201, 87, 42, 0.2)',
+              }}
             aria-hidden="true"
           >
             🤖

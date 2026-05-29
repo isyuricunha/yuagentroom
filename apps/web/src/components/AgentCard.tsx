@@ -142,7 +142,7 @@ export function AgentCard({ agent, onEdit, onClone, onDelete }: AgentCardProps) 
           backgroundColor: 'var(--bg-input)',
           padding: isExpanded ? '1rem' : '0.75rem 1rem',
           borderRadius: 'var(--radius)',
-          border: '1px solid rgba(255, 255, 255, 0.02)',
+          border: '1px solid var(--border)',
           fontFamily: 'var(--mono)',
           whiteSpace: isExpanded ? 'pre-wrap' : 'pre',
           overflow: 'hidden',
@@ -166,7 +166,7 @@ export function AgentCard({ agent, onEdit, onClone, onDelete }: AgentCardProps) 
           justifyContent: 'flex-end',
           marginTop: 'auto',
           paddingTop: '0.5rem',
-          borderTop: '1px solid rgba(255, 255, 255, 0.05)'
+          borderTop: '1px solid var(--border)'
         }}
       >
         {isDeleting ? (

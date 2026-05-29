@@ -55,11 +55,11 @@ export function ScheduleForm({ roomId, onSubmit, onClose }: ScheduleFormProps) {
                         width: '100%',
                         padding: '0.5rem',
                         borderRadius: '0.25rem',
-                        border: '1px solid var(--border-color, #e0e0e0)',
+                        border: '1px solid var(--border)',
                     }}
                     required
                 />
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #666)', marginTop: '0.25rem' }}>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
                     Format: minute hour day month weekday
                 </p>
             </div>
@@ -77,9 +77,9 @@ export function ScheduleForm({ roomId, onSubmit, onClose }: ScheduleFormProps) {
                             style={{
                                 padding: '0.25rem 0.75rem',
                                 borderRadius: '0.25rem',
-                                border: cronExpression === preset.value ? '1px solid var(--primary-color, #007bff)' : '1px solid var(--border-color, #e0e0e0)',
-                                backgroundColor: cronExpression === preset.value ? 'var(--primary-color, #007bff)' : 'transparent',
-                                color: cronExpression === preset.value ? '#fff' : 'var(--text-color, #333)',
+                                border: cronExpression === preset.value ? '1px solid var(--accent)' : '1px solid var(--border)',
+                                backgroundColor: cronExpression === preset.value ? 'var(--accent)' : 'transparent',
+                                color: cronExpression === preset.value ? 'var(--text-heading)' : 'var(--text)',
                                 cursor: 'pointer',
                                 fontSize: '0.75rem',
                             }}
@@ -101,7 +101,7 @@ export function ScheduleForm({ roomId, onSubmit, onClose }: ScheduleFormProps) {
                         width: '100%',
                         padding: '0.5rem',
                         borderRadius: '0.25rem',
-                        border: '1px solid var(--border-color, #e0e0e0)',
+                        border: '1px solid var(--border)',
                     }}
                 >
                     <option value="UTC">UTC</option>
@@ -116,7 +116,7 @@ export function ScheduleForm({ roomId, onSubmit, onClose }: ScheduleFormProps) {
             </div>
 
             {error && (
-                <div style={{ color: 'var(--error-color, #dc3545)', marginBottom: '1rem' }}>
+                    <div style={{ color: 'var(--danger)', marginBottom: '1rem' }}>
                     {error}
                 </div>
             )}
@@ -129,7 +129,7 @@ export function ScheduleForm({ roomId, onSubmit, onClose }: ScheduleFormProps) {
                         padding: '0.5rem 1rem',
                         borderRadius: '0.25rem',
                         border: 'none',
-                        backgroundColor: 'var(--bg-secondary, #f5f5f5)',
+                        backgroundColor: 'var(--bg-surface)',
                         cursor: 'pointer',
                     }}
                 >
@@ -142,8 +142,8 @@ export function ScheduleForm({ roomId, onSubmit, onClose }: ScheduleFormProps) {
                         padding: '0.5rem 1rem',
                         borderRadius: '0.25rem',
                         border: 'none',
-                        backgroundColor: isSubmitting ? 'var(--text-secondary, #999)' : 'var(--primary-color, #007bff)',
-                        color: '#fff',
+                        backgroundColor: isSubmitting ? 'var(--text-muted)' : 'var(--accent)',
+                        color: 'var(--text-heading)',
                         cursor: isSubmitting ? 'not-allowed' : 'pointer',
                     }}
                 >

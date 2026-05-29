@@ -41,8 +41,8 @@ export function MessageReactions({ reactions, currentUserId, onReactionClick, on
                             gap: '0.25rem',
                             padding: '0.25rem 0.5rem',
                             borderRadius: '1rem',
-                            border: '1px solid var(--border-color, #e0e0e0)',
-                            backgroundColor: userHasReaction ? 'var(--primary-color, #007bff)15' : 'var(--bg-secondary, #f5f5f5)',
+                            border: '1px solid var(--border)',
+                            backgroundColor: userHasReaction ? 'rgba(201, 87, 42, 0.15)' : 'var(--bg-surface)',
                             cursor: 'pointer',
                             fontSize: '0.875rem',
                         }}

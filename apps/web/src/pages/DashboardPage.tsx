@@ -118,7 +118,7 @@ export function DashboardPage() {
   if (error) {
     return (
       <div className="empty-state-enhanced" role="alert" aria-live="assertive">
-        <div className="empty-state-icon" style={{ borderColor: 'rgba(239, 68, 68, 0.3)', background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.05))' }}>
+        <div className="empty-state-icon" style={{ borderColor: 'rgba(191, 97, 106, 0.3)', background: 'linear-gradient(135deg, rgba(191, 97, 106, 0.15), rgba(191, 97, 106, 0.05))' }}>
           <AlertCircle size={40} aria-hidden="true" />
         </div>
         <h3>{t('dashboard.errorLoading')}</h3>

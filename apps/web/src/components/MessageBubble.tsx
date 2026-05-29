@@ -106,7 +106,7 @@ export function MessageBubble({
                   border: 'none',
                   cursor: 'pointer',
                   fontSize: '0.875rem',
-                  color: 'var(--text-secondary, #666)',
+                  color: 'var(--text-muted)',
                   padding: '0.25rem',
                   borderRadius: '0.25rem',
                 }}

@@ -80,7 +80,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               onClick={this.handleReset}
               style={{
                 background: 'var(--accent)',
-                color: '#fff',
+                color: 'var(--text-heading)',
                 border: 'none',
                 borderRadius: 'var(--radius)',
                 padding: '0.5rem 1.5rem',

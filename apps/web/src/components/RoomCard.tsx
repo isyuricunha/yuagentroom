@@ -132,7 +132,7 @@ export function RoomCard({ room, onDelete, isDeleting = false }: RoomCardProps) 
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              background: 'rgba(59, 130, 246, 0.1)',
+              background: 'rgba(201, 87, 42, 0.1)',
               color: 'var(--accent)',
               borderRadius: '8px',
               flexShrink: 0

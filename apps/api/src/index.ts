@@ -35,8 +35,9 @@ async function createDefaultAdminUser(dbClient: Awaited<ReturnType<typeof getDb>
     return; // Users already exist
   }
 
-  // Create default admin user with username "admin" and password "admin123"
-  const adminPasswordHash = await hashPassword('admin123');
+  // Create default admin user with username "admin"
+  const adminPassword = readEnv().ADMIN_PASSWORD || 'admin123';
+  const adminPasswordHash = await hashPassword(adminPassword);
   const now = new Date();
   const adminId = crypto.randomUUID();
 
@@ -63,8 +64,12 @@ async function main(): Promise<void> {
   // Create default admin user if none exists
   await createDefaultAdminUser(dbClient);
 
-  // Seed default templates
-  await seed();
+  // Seed default templates (non-critical, don't crash on failure)
+  try {
+    await seed();
+  } catch (err) {
+    console.error('[Startup] Seed failed (non-critical):', err);
+  }
 
   // Initialize the room runner with the broadcast function
   getRoomRunner(broadcast);

@@ -381,11 +381,22 @@ const roomsPlugin: FastifyPluginAsync = async (fastify) => {
     return reply.send((messages as unknown[]).reverse());
   });
 
-  // DELETE /rooms/:id — delete room
+  // DELETE /rooms/:id — delete room and cascade to related tables
   fastify.delete<{ Params: { id: string } }>('/rooms/:id', async (req, reply) => {
     const { id } = req.params;
     const client = await getDb();
 
+    // Delete messages in this room (reactions are orphaned, then cleaned)
+    const msgIds = (await dbSelect(client, client.schema.messages, {
+      where: eq(client.schema.messages.roomId, id),
+    }) as { id: string }[]).map(m => m.id);
+
+    if (msgIds.length > 0) {
+      await dbDelete(client, client.schema.messageReactions, inArray(client.schema.messageReactions.messageId, msgIds));
+    }
+    await dbDelete(client, client.schema.messages, eq(client.schema.messages.roomId, id));
+    await dbDelete(client, client.schema.roomAgents, eq(client.schema.roomAgents.roomId, id));
+    await dbDelete(client, client.schema.scheduledRooms, eq(client.schema.scheduledRooms.roomId, id));
     await dbDelete(client, client.schema.rooms, eq(client.schema.rooms.id, id));
 
     return reply.status(204).send();
@@ -419,10 +430,12 @@ const roomsPlugin: FastifyPluginAsync = async (fastify) => {
   // POST /rooms/:roomId/messages/:messageId/reactions — Add a reaction
   fastify.post<{
     Params: { roomId: string; messageId: string };
-    Body: { emoji: string; userId: string };
+    Body: { emoji: string };
   }>('/rooms/:roomId/messages/:messageId/reactions', async (req, reply) => {
     const { messageId } = req.params;
-    const { emoji, userId } = req.body;
+    const { emoji } = req.body;
+    const payload = await req.jwtVerify<{ userId: string }>();
+    const userId = payload.userId;
     const client = await getDb();
 
     // Verify message exists

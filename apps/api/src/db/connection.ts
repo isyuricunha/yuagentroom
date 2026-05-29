@@ -1,7 +1,12 @@
 import { readEnv } from '../utils/env.js';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
 
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
+
+// Resolve API package root from this file's location (apps/api/dist/db/connection.js → apps/api)
+const API_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 export type SqliteSchema = {
   agents: typeof import('./schema.js').agentsSqlite;
@@ -41,7 +46,7 @@ export async function getDb(): Promise<DbClient> {
   const { DATABASE_URL } = readEnv();
 
   if (DATABASE_URL.startsWith('sqlite:')) {
-    const path = DATABASE_URL.slice('sqlite:'.length);
+    let dbPath = DATABASE_URL.slice('sqlite:'.length);
 
     const { default: Database } = await import('better-sqlite3');
     const { drizzle } = await import('drizzle-orm/better-sqlite3');
@@ -49,12 +54,18 @@ export async function getDb(): Promise<DbClient> {
     const fs = await import('fs');
     const pathModule = await import('path');
 
-    const dir = pathModule.dirname(path);
+    // Resolve relative paths against the API package root, not CWD
+    // This ensures the DB file persists across restarts regardless of CWD
+    if (!pathModule.isAbsolute(dbPath)) {
+      dbPath = pathModule.join(API_ROOT, dbPath);
+    }
+
+    const dir = pathModule.dirname(dbPath);
     if (dir !== '.' && !fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
 
-    const sqlite = new Database(path);
+    const sqlite = new Database(dbPath);
     sqlite.pragma('journal_mode = WAL');
 
     const sqliteSchema: SqliteSchema = {

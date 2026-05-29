@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { randomUUID } from 'crypto';
 import { getDb } from '../db/index.js';
-import { dbSelect, dbInsert, dbDelete, dbSelectColumns, eq, and, isNull, desc, inArray, dialectDate } from '../db/db-helpers.js';
+import { dbSelect, dbInsert, dbDelete, eq, and, isNull, desc, inArray, dialectDate } from '../db/db-helpers.js';
 import type { ConversationExport, ExportedMessage } from '@agentroom/shared';
 
 const roomsPlugin: FastifyPluginAsync = async (fastify) => {
@@ -73,17 +73,16 @@ const roomsPlugin: FastifyPluginAsync = async (fastify) => {
     }
 
     // Get active agents (left_at is null)
-    const roomAgentRows = await dbSelectColumns(
+    const roomAgentRows = await dbSelect(
       client,
       client.schema.roomAgents,
-      { agentId: true },
       {
         where: and(
           eq(client.schema.roomAgents.roomId, id),
           isNull(client.schema.roomAgents.leftAt),
         ),
       },
-    );
+    ) as Array<{ agentId: string }>;
 
     const agentIds = (roomAgentRows as Array<{ agentId: string }>).map((r) => r.agentId);
 

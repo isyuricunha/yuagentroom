@@ -16,7 +16,7 @@ export function RoomTemplateCard({ template, onSelect }: RoomTemplateCardProps) 
                 )}
             </div>
             <p className="template-card-description">{template.description}</p>
-            <Button variant="primary" onClick={() => onSelect(template)} style={{ width: '100%', marginTop: 'auto' }}>
+            <Button variant="primary" style={{ width: '100%', marginTop: 'auto' }}>
                 Use Template
             </Button>
         </div>
